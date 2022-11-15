@@ -1,0 +1,278 @@
+#cloud-config
+packages:
+  - git
+  - make
+  - gcc
+  - libc6-dev
+  - sudo
+users:
+  - name: etherum
+    home: /home/etherum
+    shell: /bin/bash
+    uid: "1001"
+write_files:
+  - path: /etc/sudoers.d/etherum
+    content: |
+      # Cmnd alias specification
+      Cmnd_Alias ETH_CMDS = /bin/systemctl stop geth, /bin/systemctl start geth, /bin/systemctl stop beacon-chain, /bin/systemctl start beacon-chain, /bin/systemctl stop validator, /bin/systemctl start validator, /bin/systemctl stop boot-node, /bin/systemctl start boot-node
+
+      # User privilege specification
+      etherum    ALL=(ALL) NOPASSWD: ETH_CMDS
+  - path: /etc/systemd/system/geth.service
+    content: |
+      [Unit]
+      Description     = geth eth1 service
+      Wants           = network-online.target
+      After           = network-online.target
+
+      [Service]
+      User            = etherum
+      WorkingDirectory= /home/etherum/geth
+      ExecStart       = /home/etherum/geth/bin/geth --datadir /home/etherum/data-geth --port 30303 --http --http.addr 0.0.0.0 --http.port 8545 --http.api eth,net,personal,web3 --ws --ws.addr 0.0.0.0 --ws.port 8546 --ws.api eth,net,personal,web3 --authrpc.jwtsecret=/home/etherum/jwtsecret --syncmode=full --bootnodes "enode://ac99b39273b2984f6abf263da74877e3024fda9188e50c8159a0e8ea1825a4f3afbf6dbda37ce28037dc805928e31cdf69a21638a2f31bf886f600c7bf03f93c@135.181.140.168:30343"
+      Restart         = on-failure
+
+      [Install]
+      WantedBy= multi-user.target
+  - path: /etc/systemd/system/beacon-chain.service
+    content: |
+      [Unit]
+      Description     = eth2 beacon chain service
+      Wants           = network-online.target
+      After           = network-online.target
+
+      [Service]
+      User            = etherum
+      WorkingDirectory= /home/etherum/lighthouse
+      ExecStart       = /home/etherum/lighthouse/lighthouse bn --testnet-dir /home/etherum/testnet --datadir /home/etherum/data-lh --staking --metrics --port 9010 --http-address 0.0.0.0 --metrics-address 0.0.0.0 --execution-endpoint http://127.0.0.1:8551 --execution-jwt="/home/etherum/jwtsecret" --boot-nodes "enr:-Jq4QEXPZ_XIDSBVyK-Q4dYvdgMMsocNyzKDrzWygHmbuttqJ7a7Fm1gIRDFCnQwmGBxdjnp66H4IRbMM3wzSMjOhAUBhGV0aDKQv0kILzAAEAL__________4JpZIJ2NIJpcISI8x4MiXNlY3AyNTZrMaEDGQcSErzoAEzroOx3prBADcqZk0uzfFClvwkwLg6dSo6DdWRwgiMp,enr:-L24QMbsd6cwIp5dMoZqa2MI6sDOcLALBkVG7R1Pb1iJXsjlD-4nR77bOgMwRdatPBrnjHz5Zf0mqDhDIwfMD5gKyUWBzIdhdHRuZXRziAAAAAAAAAAAhGV0aDKQrkisdjAAEAH__________4JpZIJ2NIJpcISHtYyoiXNlY3AyNTZrMaEDN0LV1k8O_qofxiVh5rumGIY-0_z3Mq-Xh8lLdwwEb42Ic3luY25ldHMAg3RjcIIjUIN1ZHCCI1A"
+      Restart         = on-failure
+
+      [Install]
+      WantedBy= multi-user.target
+  - path: /etc/systemd/system/validator.service
+    content: |
+      [Unit]
+      Description     = eth2 validator service
+      Wants           = network-online.target beacon-chain.service
+      After           = network-online.target
+
+      [Service]
+      User            = etherum
+      WorkingDirectory= /home/etherum/lighthouse
+      ExecStart       = /home/etherum/lighthouse/lighthouse vc --testnet-dir /home/etherum/testnet --datadir /home/etherum/data-lh --beacon-nodes "http://localhost:5052" --graffiti "pk910 (2)" --suggested-fee-recipient 0x14627ea0e2B27b817DbfF94c3dA383bB73F8C30b --init-slashing-protection --allow-unsynced
+      Restart         = on-failure
+
+      [Install]
+      WantedBy= multi-user.target
+  - path: /home/etherum/update.sh
+    content: |
+      #!/bin/bash
+      mkdir -p ~/src
+      cd ~/src
+      get_github_release() {
+        curl --silent "https://api.github.com/repos/$1/releases/latest" | # Get latest release from GitHub api
+          grep '"tag_name":' |                                            # Get tag line
+          sed -E 's/.*"([^"]+)".*/\1/'                                    # Pluck JSON value
+      }
+      export PATH=/home/etherum/golang/bin:/home/etherum/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+      # update golang
+      mkdir -p golang
+      cd golang
+      golang_release=$(wget -qO- https://golang.org/dl/ | grep -oP '\/go([0-9\.]+)\.linux-amd64\.tar\.gz' | head -n 1 | grep -oP 'go[0-9\.]+' | grep -oP '[0-9\.]+' | head -c -2 )
+      if [ ! -z "$golang_release" ] && [ ! -d "$golang_release" ]; then
+        wget "https://golang.org/dl/go${golang_release}.linux-amd64.tar.gz"
+
+        mkdir $golang_release
+        cd $golang_release
+        tar xfz ../go${golang_release}.linux-amd64.tar.gz
+
+        rm /home/etherum/golang
+        ln -s /home/etherum/src/golang/$golang_release/go /home/etherum/golang
+
+        cd ..
+      fi
+      cd ..
+
+      # update geth
+      mkdir -p geth
+      cd geth
+      geth_release=$(get_github_release ethereum/go-ethereum)
+      echo "geth release: ${geth_release}"
+      if [ ! -z "$geth_release" ] && [ ! -d "$geth_release" ]; then
+        wget "https://github.com/ethereum/go-ethereum/archive/refs/tags/${geth_release}.tar.gz"
+
+        mkdir $geth_release
+        cd $geth_release
+        tar xfz ../${geth_release}.tar.gz
+        cd go-ethereum-*
+        geth_path=$(pwd)
+
+        make geth
+
+        rm /home/etherum/geth
+        ln -s $geth_path/build /home/etherum/geth
+
+        cd ..
+        cd ..
+      fi
+      cd ..
+
+      # update lighthouse
+      mkdir -p lighthouse
+      cd lighthouse
+      lighthouse_release=$(get_github_release sigp/lighthouse)
+      if [ ! -z "$lighthouse_release" ] && [ ! -d "$lighthouse_release" ]; then
+        wget "https://github.com/sigp/lighthouse/releases/download/$lighthouse_release/lighthouse-${lighthouse_release}-x86_64-unknown-linux-gnu-portable.tar.gz"
+        mkdir $lighthouse_release
+        cd $lighthouse_release
+        tar xfz ../lighthouse-${lighthouse_release}-x86_64-unknown-linux-gnu-portable.tar.gz
+        chmod +x ./*
+        rm /home/etherum/lighthouse 2> /dev/null
+        ln -s /home/etherum/src/lighthouse/$lighthouse_release /home/etherum/lighthouse
+        cd ..
+      fi
+      cd ..
+  - path: /home/etherum/retention.sh
+    content: |
+      #!/bin/bash
+
+      genesis_repository="pk910/test-testnet-repo"
+      testnet_dir=/home/etherum/testnet
+      el_datadir=/home/etherum/data-geth
+      cl_datadir=/home/etherum/data-lh
+      cl_port=5052
+
+
+      start_clients() {
+        # start EL / CL clients
+        echo "start clients"
+        sudo /bin/systemctl start geth
+        sudo /bin/systemctl start beacon-chain
+        sudo /bin/systemctl start validator
+      }
+
+      stop_clients() {
+        # stop EL / CL clients
+        echo "stop clients"
+        sudo /bin/systemctl stop geth
+        sudo /bin/systemctl stop beacon-chain
+        sudo /bin/systemctl stop validator
+      }
+
+      clear_datadirs() {
+        if [ -d $el_datadir/geth ]; then
+          geth_nodekey=$(cat $el_datadir/geth/nodekey)
+          rm -rf $el_datadir/geth
+          mkdir $el_datadir/geth
+          echo $geth_nodekey > $el_datadir/geth/nodekey
+        fi
+
+        rm -rf $cl_datadir/beacon
+        rm -rf $cl_datadir/validators/slashing_protection.sqlite
+      }
+
+      setup_genesis() {
+        # init el genesis
+        ~/geth/bin/geth init --datadir $el_datadir $testnet_dir/genesis.json
+      }
+
+
+
+      get_github_release() {
+        curl --silent "https://api.github.com/repos/$1/releases/latest" |
+          grep '"tag_name":' |
+          sed -E 's/.*"([^"]+)".*/\1/' |
+          head -n 1
+      }
+
+      download_genesis_release() {
+        genesis_release=$1
+
+        # remove old genesis
+        if [ -d $testnet_dir ]; then
+          rm -rf $testnet_dir/*
+        else
+          mkdir -p $testnet_dir
+        fi
+
+        # get latest genesis
+        wget -qO- https://github.com/$genesis_repository/releases/download/$genesis_release/testnet-all.tar.gz | tar xvz -C $testnet_dir
+      }
+
+      reset_testnet() {
+        stop_clients
+        clear_datadirs
+        download_genesis_release $1
+        setup_genesis
+        start_clients
+      }
+
+      check_testnet() {
+        current_time=$(date +%s)
+        genesis_time=$(curl -s http://localhost:$cl_port/eth/v1/beacon/genesis | sed 's/.*"genesis_time":"\{0,1\}\([^,"]*\)"\{0,1\}.*/\1/')
+        if ! [ $genesis_time -gt 0 ]; then
+          echo "could not get genesis time from beacon node"
+          return 0
+        fi
+
+        if ! [ -f $testnet_dir/retention.vars ]; then
+          echo "could not find retention.vars"
+          return 0
+        fi
+        source $testnet_dir/retention.vars
+
+        testnet_timeout=$(expr $genesis_time + $GENESIS_RESET_INTERVAL - 300)
+        echo "genesis timeout: $(expr $testnet_timeout - $current_time) sec"
+        if [ $testnet_timeout -le $current_time ]; then
+          genesis_release=$(get_github_release $genesis_repository)
+          if [ $genesis_release -le $CHAIN_ID ]; then
+            echo "could not find new genesis release (local: $CHAIN_ID, latest: $genesis_release)"
+            return 0
+          fi
+          
+          reset_testnet $genesis_release
+        fi
+      }
+
+      main() {
+        if ! [ -f $testnet_dir/genesis.json ]; then
+          reset_testnet $(get_github_release $genesis_repository)
+        else
+          check_testnet
+        fi
+
+      }
+
+      main
+
+  - path: /home/etherum/setup-retention.sh
+    content: |
+      #!/bin/bash
+      cd /home/etherum
+      chmod +x retention.sh
+      /home/etherum/retention.sh
+      (2>/dev/null crontab -l ; echo "*/5 * * * * /home/etherum/retention.sh") | crontab -
+  - path: /home/etherum/setup-validators.sh
+    content: |
+      #!/bin/bash
+      cd /home/etherum
+
+      # validator mnemonic
+      mnemonic="*** INSERT VALIDATOR MNEMONIC HERE ***"
+      validator_count="100"
+
+      echo $mnemonic | lighthouse/lighthouse account validator recover --datadir /home/etherum/data-lh --stdin-inputs --count $validator_count
+runcmd:
+  - [ chown, -R, "etherum:etherum", /home/etherum ]
+  - [ chmod, +x, /home/etherum/update.sh ]
+  - [ sudo, -u, etherum, /home/etherum/update.sh ]
+  - [ systemctl, daemon-reload ]
+  - [ systemctl, enable, geth.service ]
+  - [ systemctl, enable, beacon-chain.service ]
+  - [ systemctl, enable, validator.service ]
+  - [ chmod, +x, /home/etherum/setup-validators.sh ]
+  - [ sudo, -u, etherum, /home/etherum/setup-validators.sh ]
+  - [ chmod, +x, /home/etherum/setup-retention.sh ]
+  - [ sudo, -u, etherum, /home/etherum/setup-retention.sh ]
+
+
