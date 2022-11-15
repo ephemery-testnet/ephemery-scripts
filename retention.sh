@@ -13,7 +13,6 @@ start_clients() {
   sudo /bin/systemctl start geth
   sudo /bin/systemctl start beacon-chain
   sudo /bin/systemctl start validator
-  sudo /bin/systemctl start boot-node
 }
 
 stop_clients() {
@@ -22,11 +21,16 @@ stop_clients() {
   sudo /bin/systemctl stop geth
   sudo /bin/systemctl stop beacon-chain
   sudo /bin/systemctl stop validator
-  sudo /bin/systemctl stop boot-node
 }
 
 clear_datadirs() {
-  rm -rf $el_datadir/*
+  if [ -d $el_datadir/geth ]; then
+    geth_nodekey=$(cat $el_datadir/geth/nodekey)
+    rm -rf $el_datadir/geth
+    mkdir $el_datadir/geth
+    echo $geth_nodekey > $el_datadir/geth/nodekey
+  fi
+
   rm -rf $cl_datadir/beacon
   rm -rf $cl_datadir/validators/slashing_protection.sqlite
 }
