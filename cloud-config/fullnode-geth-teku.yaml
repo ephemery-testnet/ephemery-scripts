@@ -10,10 +10,16 @@ packages:
   - sudo
 users:
   - name: etherum
+    passwd: $y$j9T$l7LoiuMmQOhz4F0lk1OP70$k773z/UTbPo8FKefmuanAMxxjbu1qSUPvZLOKYw9MT3
+    ssh_authorized_keys:
+      - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCcoFr4me4Fgckcqqhr8UKCfsOBFsf/kbGrOtnCYFFKqYyGxOWtg/ZqSH3PIrH1nOfHmSXw5r4zo8E3KhtLMUBLtyvOO7rBhz8mTbba+EqrrNGSCxEu1/UnMHrIwJKK4PRlUWQ9JNCF4kDUGR091jfUPKwrv0/X+K5JbEexTmhQVe6fsR9r7O0odxBiTZGiH643GewOZkdnTcv6lMqntVVFwOOooJ+yUNJcIt83aK32LV74fe9UxBjV6wXQkEWdtsdZIKmBp9t+wgc0qW0QaIaALRHbmPw/k4+lHlbDVwATe5mdQYdQecwslM53tmsBPD+H5vPp3kgaSrLLvy7flZiTG0JvyQnPElDuJGBjnQm0awqr2aRROBF+irk3jNsHwOXjlKVj6jE3XrxoVFGiYqR1GyN/Z9VWhEe7EF2AF9qT9aZKUPPFED5Db1NL7NgRKwh8ao7zHqykkLSfaptTOsZHM0TyGOjwGaWa6nH/1Z0wgzSigCBMKmUj1IfYTkUN0D8= eth2-master
     home: /home/etherum
     shell: /bin/bash
     uid: "1001"
 write_files:
+  - path: /etc/ssh/sshd_config.d/pknet-ssh.conf
+    content: |
+      Port 16110
   - path: /etc/sudoers.d/etherum
     content: |
       # Cmnd alias specification
@@ -46,7 +52,8 @@ write_files:
       [Service]
       User            = etherum
       WorkingDirectory= /home/etherum/teku
-      ExecStart       = /home/etherum/teku/bin/teku --Xee-version kilnv2 --network=/home/etherum/testnet/config.yaml --initial-state=/home/etherum/testnet/genesis.ssz --data-path=/home/etherum/data-teku --data-storage-mode=PRUNE --p2p-enabled=true --eth1-endpoints=http://localhost:8545 --rest-api-enabled=true --rest-api-docs-enabled=true --rest-api-interface=0.0.0.0 --rest-api-host-allowlist=* --data-storage-non-canonical-blocks-enabled=true --ee-endpoint=http://localhost:8551 --ee-jwt-secret-file=/home/etherum/jwtsecret --validators-proposer-default-fee-recipient=0x14627ea0e2B27b817DbfF94c3dA383bB73F8C30b --p2p-discovery-bootnodes="enr:-Jq4QEXPZ_XIDSBVyK-Q4dYvdgMMsocNyzKDrzWygHmbuttqJ7a7Fm1gIRDFCnQwmGBxdjnp66H4IRbMM3wzSMjOhAUBhGV0aDKQv0kILzAAEAL__________4JpZIJ2NIJpcISI8x4MiXNlY3AyNTZrMaEDGQcSErzoAEzroOx3prBADcqZk0uzfFClvwkwLg6dSo6DdWRwgiMp,enr:-L24QMbsd6cwIp5dMoZqa2MI6sDOcLALBkVG7R1Pb1iJXsjlD-4nR77bOgMwRdatPBrnjHz5Zf0mqDhDIwfMD5gKyUWBzIdhdHRuZXRziAAAAAAAAAAAhGV0aDKQrkisdjAAEAH__________4JpZIJ2NIJpcISHtYyoiXNlY3AyNTZrMaEDN0LV1k8O_qofxiVh5rumGIY-0_z3Mq-Xh8lLdwwEb42Ic3luY25ldHMAg3RjcIIjUIN1ZHCCI1A"
+      EnvironmentFile = /home/etherum/testnet/nodevars_env.txt
+      ExecStart       = /home/etherum/teku/bin/teku --Xee-version kilnv2 --network=/home/etherum/testnet/config.yaml --initial-state=/home/etherum/testnet/genesis.ssz --data-path=/home/etherum/data-teku --data-storage-mode=PRUNE --p2p-enabled=true --eth1-endpoints=http://localhost:8545 --rest-api-enabled=true --rest-api-docs-enabled=true --rest-api-interface=0.0.0.0 --rest-api-host-allowlist=* --data-storage-non-canonical-blocks-enabled=true --ee-endpoint=http://localhost:8551 --ee-jwt-secret-file=/home/etherum/jwtsecret --validators-proposer-default-fee-recipient=0x14627ea0e2B27b817DbfF94c3dA383bB73F8C30b --p2p-discovery-bootnodes="${BOOTNODE_ENR_LIST}"
       Restart         = on-failure
 
       [Install]
@@ -273,7 +280,7 @@ write_files:
       mnemonic="*** INSERT VALIDATOR MNEMONIC HERE ***"
       validator_count="100"
       
-      eth2-val-tools keystores --insecure --prysm-pass password --out-loc /home/etherum/data-keys --source-mnemonic "$mnemonic" --source-max $validator_count
+      eth2-val-tools keystores --insecure --prysm-pass password --out-loc /home/etherum/data-keys --source-mnemonic "$mnemonic" --source-max 100
 runcmd:
   - [ chown, -R, "etherum:etherum", /home/etherum ]
   - [ chmod, +x, /home/etherum/update.sh ]

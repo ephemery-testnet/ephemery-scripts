@@ -1,9 +1,7 @@
 #cloud-config
 packages:
   - git
-  - make
-  - gcc
-  - libc6-dev
+  - build-essential
   - sudo
 users:
   - name: etherum
@@ -48,9 +46,9 @@ write_files:
 
       [Service]
       User            = etherum
-      WorkingDirectory= /home/etherum/lighthouse
+      WorkingDirectory= /home/etherum/lodestar
       EnvironmentFile = /home/etherum/testnet/nodevars_env.txt
-      ExecStart       = /home/etherum/lighthouse/lighthouse bn --testnet-dir /home/etherum/testnet --datadir /home/etherum/data-lh --staking --metrics --port 9010 --http-address 0.0.0.0 --metrics-address 0.0.0.0 --execution-endpoint http://127.0.0.1:8551 --execution-jwt="/home/etherum/jwtsecret" --boot-nodes ${BOOTNODE_ENR_LIST}
+      ExecStart       = /home/etherum/lodestar/lodestar beacon --dataDir=/home/etherum/data-lodestar --paramsFile=/home/etherum/testnet/config.yaml --genesisStateFile=/home/etherum/testnet/genesis.ssz --eth1.depositContractDeployBlock=0 --network.connectToDiscv5Bootnodes=true --discv5=true --eth1=true --eth1.providerUrls=http://localhost:8545 --execution.urls=http://localhost:8551 --rest=true --rest.address=0.0.0.0 --rest.namespace=* --rest.port=4000 --jwt-secret=/home/etherum/jwtsecret --bootnodes="${BOOTNODE_ENR_LIST}"
       Restart         = on-failure
 
       [Install]
@@ -64,12 +62,19 @@ write_files:
 
       [Service]
       User            = etherum
-      WorkingDirectory= /home/etherum/lighthouse
-      ExecStart       = /home/etherum/lighthouse/lighthouse vc --testnet-dir /home/etherum/testnet --datadir /home/etherum/data-lh --beacon-nodes "http://localhost:5052" --graffiti "pk910 (2)" --suggested-fee-recipient 0x14627ea0e2B27b817DbfF94c3dA383bB73F8C30b --init-slashing-protection --allow-unsynced
+      WorkingDirectory= /home/etherum/lodestar
+      ExecStart       = /home/etherum/lodestar/lodestar validator --dataDir=/home/etherum/data-lodestar --paramsFile=/home/etherum/testnet/config.yaml --server http://localhost:4000 --keystoresDir=/home/etherum/data-keys/keys --secretsDir=/home/etherum/data-keys/secrets --graffiti "pk910 (4)" --suggested-fee-recipient 0x14627ea0e2B27b817DbfF94c3dA383bB73F8C30b
       Restart         = on-failure
 
       [Install]
       WantedBy= multi-user.target
+  - path: /root/setup.sh
+    content: |
+      curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add
+      echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list
+      curl -sL https://deb.nodesource.com/setup_16.x | sudo -E bash -
+      apt-get update
+      apt-get install -y nodejs yarn
   - path: /home/etherum/update.sh
     content: |
       #!/bin/bash
@@ -100,6 +105,9 @@ write_files:
       fi
       cd ..
 
+      # install eth2-val-tools
+      go install github.com/protolambda/eth2-val-tools@latest
+
       # update geth
       mkdir -p geth
       cd geth
@@ -124,21 +132,32 @@ write_files:
       fi
       cd ..
 
-      # update lighthouse
-      mkdir -p lighthouse
-      cd lighthouse
-      lighthouse_release=$(get_github_release sigp/lighthouse)
-      if [ ! -z "$lighthouse_release" ] && [ ! -d "$lighthouse_release" ]; then
-        wget "https://github.com/sigp/lighthouse/releases/download/$lighthouse_release/lighthouse-${lighthouse_release}-x86_64-unknown-linux-gnu-portable.tar.gz"
-        mkdir $lighthouse_release
-        cd $lighthouse_release
-        tar xfz ../lighthouse-${lighthouse_release}-x86_64-unknown-linux-gnu-portable.tar.gz
-        chmod +x ./*
-        rm /home/etherum/lighthouse 2> /dev/null
-        ln -s /home/etherum/src/lighthouse/$lighthouse_release /home/etherum/lighthouse
+      # update lodestar
+      mkdir -p lodestar
+      cd lodestar
+      lodestar_release=$(get_github_release chainsafe/lodestar)
+      if [ ! -z "$lodestar_release" ] && [ ! -d "$lodestar_release" ]; then
+        wget "https://github.com/ChainSafe/lodestar/archive/refs/tags/${lodestar_release}.tar.gz"
+        mkdir $lodestar_release
+        cd $lodestar_release
+        tar xfz ../${lodestar_release}.tar.gz
+        cd lodestar-*
+        lodestar_path=$(pwd)
+
+        yarn install --ignore-optional
+        yarn run build
+        
+        rm /home/etherum/lodestar 2> /dev/null
+        ln -s $lodestar_path /home/etherum/lodestar
+        cd ..
         cd ..
       fi
       cd ..
+
+      # create jwtsecret if not found
+      if ! [ -f /home/etherum/jwtsecret ]; then
+        echo -n 0x$(openssl rand -hex 32 | tr -d "\n") > /home/etherum/jwtsecret
+      fi
   - path: /home/etherum/retention.sh
     content: |
       #!/bin/bash
@@ -146,8 +165,8 @@ write_files:
       genesis_repository="pk910/test-testnet-repo"
       testnet_dir=/home/etherum/testnet
       el_datadir=/home/etherum/data-geth
-      cl_datadir=/home/etherum/data-lh
-      cl_port=5052
+      cl_datadir=/home/etherum/data-lodestar
+      cl_port=4000
 
 
       start_clients() {
@@ -174,8 +193,7 @@ write_files:
           echo $geth_nodekey > $el_datadir/geth/nodekey
         fi
 
-        rm -rf $cl_datadir/beacon
-        rm -rf $cl_datadir/validators/slashing_protection.sqlite
+        rm -rf $cl_datadir/*
       }
 
       setup_genesis() {
@@ -263,11 +281,16 @@ write_files:
     content: |
       #!/bin/bash
       cd /home/etherum
+      export PATH=/home/etherum/golang/bin:/home/etherum/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
       # validator mnemonic
       mnemonic="*** INSERT VALIDATOR MNEMONIC HERE ***"
-      echo $mnemonic | lighthouse/lighthouse account validator recover --datadir /home/etherum/data-lh --stdin-inputs --count 100
+      validator_count="50"
+
+      eth2-val-tools keystores --insecure --prysm-pass password --out-loc /home/etherum/data-keys --source-mnemonic "$mnemonic" --source-max $validator_count
 runcmd:
+  - [ chmod, +x, /root/setup.sh ]
+  - [ /root/setup.sh ]
   - [ chown, -R, "etherum:etherum", /home/etherum ]
   - [ chmod, +x, /home/etherum/update.sh ]
   - [ sudo, -u, etherum, /home/etherum/update.sh ]
