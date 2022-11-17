@@ -187,6 +187,7 @@ write_files:
         fi
 
         rm -rf $cl_datadir/*
+        rm -rf /home/etherum/.local/share/teku
       }
 
       setup_genesis() {
