@@ -1,0 +1,528 @@
+#cloud-config
+packages:
+  - git
+  - make
+  - gcc
+  - libc6-dev
+  - sudo
+  - postgresql
+  - postgresql-contrib
+  - ca-certificates
+  - gnupg
+  - lsb-release
+  - libstdc++-10-dev
+users:
+  - name: etherum
+    passwd: $y$j9T$l7LoiuMmQOhz4F0lk1OP70$k773z/UTbPo8FKefmuanAMxxjbu1qSUPvZLOKYw9MT3
+    ssh_authorized_keys:
+      - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCcoFr4me4Fgckcqqhr8UKCfsOBFsf/kbGrOtnCYFFKqYyGxOWtg/ZqSH3PIrH1nOfHmSXw5r4zo8E3KhtLMUBLtyvOO7rBhz8mTbba+EqrrNGSCxEu1/UnMHrIwJKK4PRlUWQ9JNCF4kDUGR091jfUPKwrv0/X+K5JbEexTmhQVe6fsR9r7O0odxBiTZGiH643GewOZkdnTcv6lMqntVVFwOOooJ+yUNJcIt83aK32LV74fe9UxBjV6wXQkEWdtsdZIKmBp9t+wgc0qW0QaIaALRHbmPw/k4+lHlbDVwATe5mdQYdQecwslM53tmsBPD+H5vPp3kgaSrLLvy7flZiTG0JvyQnPElDuJGBjnQm0awqr2aRROBF+irk3jNsHwOXjlKVj6jE3XrxoVFGiYqR1GyN/Z9VWhEe7EF2AF9qT9aZKUPPFED5Db1NL7NgRKwh8ao7zHqykkLSfaptTOsZHM0TyGOjwGaWa6nH/1Z0wgzSigCBMKmUj1IfYTkUN0D8= eth2-master
+    home: /home/etherum
+    shell: /bin/bash
+    uid: "1001"
+  - name: blockscout
+    home: /home/blockscout
+    shell: /bin/bash
+    uid: "1002"
+  - name: beaconchain
+    home: /home/beaconchain
+    shell: /bin/bash
+    uid: "1003"
+write_files:
+  - path: /etc/ssh/sshd_config.d/pknet-ssh.conf
+    content: |
+      Port 16110
+  - path: /etc/sudoers.d/etherum
+    content: |
+      # Cmnd alias specification
+      Cmnd_Alias ETH_CMDS = /bin/systemctl stop geth, /bin/systemctl start geth, /bin/systemctl stop beacon-chain, /bin/systemctl start beacon-chain, /bin/systemctl stop validator, /bin/systemctl start validator, /bin/systemctl stop boot-node, /bin/systemctl start boot-node, /home/blockscout/start.sh, /home/blockscout/stop.sh, /root/reset-blockscout-db.sh, /home/beaconchain/start.sh, /home/beaconchain/stop.sh, /home/beaconchain/reset.sh, /root/reset-beaconchain-db.sh
+
+      # User privilege specification
+      etherum    ALL=(ALL) NOPASSWD: ETH_CMDS
+  - path: /etc/systemd/system/geth.service
+    content: |
+      [Unit]
+      Description     = geth eth1 service
+      Wants           = network-online.target
+      After           = network-online.target
+
+      [Service]
+      User            = etherum
+      WorkingDirectory= /home/etherum/geth
+      ExecStart       = /home/etherum/geth/bin/geth --datadir /home/etherum/data-geth --port 30303 --http --http.addr 0.0.0.0 --http.port 8545 --http.api eth,net,personal,web3,txpool,debug --ws --ws.addr 0.0.0.0 --ws.port 8546 --ws.api eth,net,personal,web3,txpool,debug --authrpc.jwtsecret=/home/etherum/jwtsecret --syncmode=full --bootnodes "enode://0f2c301a9a3f9fa2ccfa362b79552c052905d8c2982f707f46cd29ece5a9e1c14ecd06f4ac951b228f059a43c6284a1a14fce709e8976cac93b50345218bf2e9@135.181.140.168:30343"
+      Restart         = on-failure
+
+      [Install]
+      WantedBy= multi-user.target
+  - path: /etc/systemd/system/beacon-chain.service
+    content: |
+      [Unit]
+      Description     = eth2 beacon chain service
+      Wants           = network-online.target
+      After           = network-online.target
+
+      [Service]
+      User            = etherum
+      WorkingDirectory= /home/etherum/lighthouse
+      EnvironmentFile = /home/etherum/testnet/nodevars_env.txt
+      ExecStart       = /home/etherum/lighthouse/lighthouse bn --testnet-dir /home/etherum/testnet --datadir /home/etherum/data-lh --staking --metrics --port 9010 --http-address 0.0.0.0 --metrics-address 0.0.0.0 --execution-endpoint http://127.0.0.1:8551 --execution-jwt="/home/etherum/jwtsecret" --boot-nodes ${BOOTNODE_ENR_LIST}
+      Restart         = on-failure
+
+      [Install]
+      WantedBy= multi-user.target
+  - path: /etc/systemd/system/validator.service
+    content: |
+      [Unit]
+      Description     = eth2 validator service
+      Wants           = network-online.target beacon-chain.service
+      After           = network-online.target
+
+      [Service]
+      User            = etherum
+      WorkingDirectory= /home/etherum/lighthouse
+      ExecStart       = /home/etherum/lighthouse/lighthouse vc --testnet-dir /home/etherum/testnet --datadir /home/etherum/data-lh --beacon-nodes "http://localhost:5052" --graffiti "pk910 (2)" --suggested-fee-recipient 0x14627ea0e2B27b817DbfF94c3dA383bB73F8C30b --init-slashing-protection --allow-unsynced
+      Restart         = on-failure
+
+      [Install]
+      WantedBy= multi-user.target
+  - path: /root/reset-blockscout-db.sh
+    content: |
+      #!/bin/bash
+
+      sudo -u postgres bash -c "cd ~ && dropdb blockscout"
+      sudo -u postgres bash -c "cd ~ && createdb blockscout -O blockscout"
+      
+  - path: /root/reset-beaconchain-db.sh
+    content: |
+      #!/bin/bash
+
+      sudo -u postgres bash -c "cd ~ && dropdb beaconchain"
+      sudo -u postgres bash -c "cd ~ && createdb beaconchain -O beaconchain"
+
+      sudo -u beaconchain /home/beaconchain/setup-tables.sh
+      
+  - path: /root/setup.sh
+    content: |
+      #!/bin/bash
+
+      # install docker
+      mkdir -p /etc/apt/keyrings
+      curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+      echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian  $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+      apt-get update
+      apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+
+      # setup database server
+      echo "listen_addresses = '*'" >> /etc/postgresql/13/main/postgresql.conf
+      echo "host all all 172.17.0.0/16 trust" >> /etc/postgresql/13/main/pg_hba.conf
+
+      pg_ctlcluster 13 main start
+      service postgresql restart
+
+      # create blockscout credentials & database
+      blockscout_db_password=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 16 ; echo '')
+      sudo -u postgres bash -c "cd ~ && createuser blockscout"
+      sudo -u postgres bash -c "cd ~ && createdb blockscout -O blockscout"
+      echo "alter user blockscout with password '$blockscout_db_password'" | sudo -u postgres bash -c "cd ~ && psql blockscout"
+      echo "$blockscout_db_password" > /home/blockscout/.dbpassword.txt
+
+      # add blockscout user to docker group
+      usermod -a -G docker blockscout
+
+      # create beaconchain credentials & database
+      beaconchain_db_password=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 16 ; echo '')
+      sudo -u postgres bash -c "cd ~ && createuser beaconchain"
+      sudo -u postgres bash -c "cd ~ && createdb beaconchain -O beaconchain"
+      echo "alter user beaconchain with password '$beaconchain_db_password'" | sudo -u postgres bash -c "cd ~ && psql beaconchain"
+      echo "$beaconchain_db_password" > /home/beaconchain/.dbpassword.txt
+
+      # add beaconchain user to docker group
+      usermod -a -G docker beaconchain
+
+  - path: /home/etherum/update.sh
+    content: |
+      #!/bin/bash
+      mkdir -p ~/src
+      cd ~/src
+      get_github_release() {
+        curl --silent "https://api.github.com/repos/$1/releases/latest" | # Get latest release from GitHub api
+          grep '"tag_name":' |                                            # Get tag line
+          sed -E 's/.*"([^"]+)".*/\1/'                                    # Pluck JSON value
+      }
+      export PATH=/home/etherum/golang/bin:/home/etherum/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+      # update golang
+      mkdir -p golang
+      cd golang
+      golang_release=$(wget -qO- https://golang.org/dl/ | grep -oP '\/go([0-9\.]+)\.linux-amd64\.tar\.gz' | head -n 1 | grep -oP 'go[0-9\.]+' | grep -oP '[0-9\.]+' | head -c -2 )
+      if [ ! -z "$golang_release" ] && [ ! -d "$golang_release" ]; then
+        wget "https://golang.org/dl/go${golang_release}.linux-amd64.tar.gz"
+
+        mkdir $golang_release
+        cd $golang_release
+        tar xfz ../go${golang_release}.linux-amd64.tar.gz
+
+        rm /home/etherum/golang
+        ln -s /home/etherum/src/golang/$golang_release/go /home/etherum/golang
+
+        cd ..
+      fi
+      cd ..
+
+      # update geth
+      mkdir -p geth
+      cd geth
+      geth_release=$(get_github_release ethereum/go-ethereum)
+      echo "geth release: ${geth_release}"
+      if [ ! -z "$geth_release" ] && [ ! -d "$geth_release" ]; then
+        wget "https://github.com/ethereum/go-ethereum/archive/refs/tags/${geth_release}.tar.gz"
+
+        mkdir $geth_release
+        cd $geth_release
+        tar xfz ../${geth_release}.tar.gz
+        cd go-ethereum-*
+        geth_path=$(pwd)
+
+        make geth
+
+        rm /home/etherum/geth
+        ln -s $geth_path/build /home/etherum/geth
+
+        cd ..
+        cd ..
+      fi
+      cd ..
+
+      # update lighthouse
+      mkdir -p lighthouse
+      cd lighthouse
+      lighthouse_release=$(get_github_release sigp/lighthouse)
+      if [ ! -z "$lighthouse_release" ] && [ ! -d "$lighthouse_release" ]; then
+        wget "https://github.com/sigp/lighthouse/releases/download/$lighthouse_release/lighthouse-${lighthouse_release}-x86_64-unknown-linux-gnu-portable.tar.gz"
+        mkdir $lighthouse_release
+        cd $lighthouse_release
+        tar xfz ../lighthouse-${lighthouse_release}-x86_64-unknown-linux-gnu-portable.tar.gz
+        chmod +x ./*
+        rm /home/etherum/lighthouse 2> /dev/null
+        ln -s /home/etherum/src/lighthouse/$lighthouse_release /home/etherum/lighthouse
+        cd ..
+      fi
+      cd ..
+  - path: /home/etherum/retention.sh
+    content: |
+      #!/bin/bash
+
+      genesis_repository="pk910/test-testnet-repo"
+      testnet_dir=/home/etherum/testnet
+      el_datadir=/home/etherum/data-geth
+      cl_datadir=/home/etherum/data-lh
+      cl_port=5052
+
+
+      start_clients() {
+        # start EL / CL clients
+        echo "start clients"
+        sudo /bin/systemctl start geth
+        sudo /bin/systemctl start beacon-chain
+        sudo /bin/systemctl start validator
+        sudo -u blockscout /home/blockscout/start.sh
+        sudo -u beaconchain /home/beaconchain/start.sh
+      }
+
+      stop_clients() {
+        # stop EL / CL clients
+        echo "stop clients"
+        sudo /bin/systemctl stop geth
+        sudo /bin/systemctl stop beacon-chain
+        sudo /bin/systemctl stop validator
+        sudo -u blockscout /home/blockscout/stop.sh
+        sudo -u beaconchain /home/beaconchain/stop.sh
+      }
+
+      clear_datadirs() {
+        if [ -d $el_datadir/geth ]; then
+          geth_nodekey=$(cat $el_datadir/geth/nodekey)
+          rm -rf $el_datadir/geth
+          mkdir $el_datadir/geth
+          echo $geth_nodekey > $el_datadir/geth/nodekey
+        fi
+
+        rm -rf $cl_datadir/beacon
+        rm -rf $cl_datadir/validators/slashing_protection.sqlite
+
+        sudo /root/reset-blockscout-db.sh
+        sudo /root/reset-beaconchain-db.sh
+      }
+
+      setup_genesis() {
+        # init el genesis
+        ~/geth/bin/geth init --datadir $el_datadir $testnet_dir/genesis.json
+
+        sudo -u beaconchain /home/beaconchain/reset.sh
+      }
+
+
+
+      get_github_release() {
+        curl --silent "https://api.github.com/repos/$1/releases/latest" |
+          grep '"tag_name":' |
+          sed -E 's/.*"([^"]+)".*/\1/' |
+          head -n 1
+      }
+
+      download_genesis_release() {
+        genesis_release=$1
+
+        # remove old genesis
+        if [ -d $testnet_dir ]; then
+          rm -rf $testnet_dir/*
+        else
+          mkdir -p $testnet_dir
+        fi
+
+        # get latest genesis
+        wget -qO- https://github.com/$genesis_repository/releases/download/$genesis_release/testnet-all.tar.gz | tar xvz -C $testnet_dir
+      }
+
+      reset_testnet() {
+        stop_clients
+        clear_datadirs
+        download_genesis_release $1
+        setup_genesis
+        start_clients
+      }
+
+      check_testnet() {
+        current_time=$(date +%s)
+        genesis_time=$(curl -s http://localhost:$cl_port/eth/v1/beacon/genesis | sed 's/.*"genesis_time":"\{0,1\}\([^,"]*\)"\{0,1\}.*/\1/')
+        if ! [ $genesis_time -gt 0 ]; then
+          echo "could not get genesis time from beacon node"
+          return 0
+        fi
+
+        if ! [ -f $testnet_dir/retention.vars ]; then
+          echo "could not find retention.vars"
+          return 0
+        fi
+        source $testnet_dir/retention.vars
+
+        testnet_timeout=$(expr $genesis_time + $GENESIS_RESET_INTERVAL - 300)
+        echo "genesis timeout: $(expr $testnet_timeout - $current_time) sec"
+        if [ $testnet_timeout -le $current_time ]; then
+          genesis_release=$(get_github_release $genesis_repository)
+          if [ $genesis_release -le $CHAIN_ID ]; then
+            echo "could not find new genesis release (local: $CHAIN_ID, latest: $genesis_release)"
+            return 0
+          fi
+          
+          reset_testnet $genesis_release
+        fi
+      }
+
+      main() {
+        if ! [ -f $testnet_dir/genesis.json ]; then
+          reset_testnet $(get_github_release $genesis_repository)
+        else
+          check_testnet
+        fi
+
+      }
+
+      main
+
+  - path: /home/etherum/setup-retention.sh
+    content: |
+      #!/bin/bash
+      cd /home/etherum
+      chmod +x retention.sh
+      /home/etherum/retention.sh
+      (2>/dev/null crontab -l ; echo "*/5 * * * * /home/etherum/retention.sh") | crontab -
+  - path: /home/etherum/setup-validators.sh
+    content: |
+      #!/bin/bash
+      cd /home/etherum
+      
+      # ADD YOUR VALIDATOR MNEMONIC HERE
+      validator_mnemonic=""
+      validator_count=100
+
+      if ! [ $validator_mnemonic = "" ]; then
+        echo $validator_mnemonic | lighthouse/lighthouse account validator recover --datadir /home/etherum/data-lh --stdin-inputs --count $validator_count
+      fi
+
+  - path: /home/blockscout/setup.sh
+    content: |
+      #!/bin/bash
+      cd /home/blockscout
+      chmod +x start.sh
+      chmod +x stop.sh
+
+      mkdir -p ./data-explorer
+
+      echo "MIX_ENV=prod" > ./data-explorer/blockscout.env
+      echo "INDEXER_DISABLE_INTERNAL_TRANSACTIONS_FETCHER=false" >> ./data-explorer/blockscout.env
+      echo "COIN=ETH" >> ./data-explorer/blockscout.env
+      echo "DISABLE_EXCHANGE_RATES=true" >> ./data-explorer/blockscout.env
+      echo "DISABLE_KNOWN_TOKENS=true" >> ./data-explorer/blockscout.env
+      echo "SHOW_PRICE_CHART=false" >> ./data-explorer/blockscout.env
+      echo "ENABLE_1559_SUPPORT=true" >> ./data-explorer/blockscout.env
+      echo "DISABLE_READ_API=false" >> ./data-explorer/blockscout.env
+      echo "DISABLE_WRITE_API=false" >> ./data-explorer/blockscout.env
+      echo "ENABLE_TXS_STATS=true" >> ./data-explorer/blockscout.env
+      echo "SHOW_TXS_CHART=true" >> ./data-explorer/blockscout.env
+      echo "DATABASE_URL=postgresql://blockscout:$(cat ./.dbpassword.txt | tr -d " \n")@172.17.0.1:5432/blockscout?ssl=false" >> ./data-explorer/blockscout.env
+      echo "SECRET_KEY_BASE=VTIB3uHDNbvrY0+60ZWgUoUBKDn9ppLR8MI4CpRz4/qLyEFs54ktJfaNT6Z221No" >> ./data-explorer/blockscout.env
+      echo "ETHEREUM_JSONRPC_VARIANT=geth" >> ./data-explorer/blockscout.env
+      echo "ETHEREUM_JSONRPC_HTTP_URL=http://172.17.0.1:8545" >> ./data-explorer/blockscout.env
+      echo "ETHEREUM_JSONRPC_WS_URL=ws://172.17.0.1:8546" >> ./data-explorer/blockscout.env
+      echo "NETWORK=Ethereum" >> ./data-explorer/blockscout.env
+      echo "SUBNETWORK=Testnet" >> ./data-explorer/blockscout.env
+      echo "LOGO_TEXT=Test ephemeral testnet" >> ./data-explorer/blockscout.env
+      echo "BLOCK_TRANSFORMER=base" >> ./data-explorer/blockscout.env
+      echo "POOL_SIZE=15" >> ./data-explorer/blockscout.env
+      echo "CHAIN_SPEC_PATH=/custom_config_data/genesis.json" >> ./data-explorer/blockscout.env
+      echo "LINK_TO_OTHER_EXPLORERS=false" >> ./data-explorer/blockscout.env
+      echo "OTHER_EXPLORERS={}" >> ./data-explorer/blockscout.env
+      echo "SUPPORTED_CHAINS={}" >> ./data-explorer/blockscout.env
+  - path: /home/blockscout/start.sh
+    content: |
+      #!/bin/bash
+
+      docker run -d --restart unless-stopped --name=el_explorer \
+        --env-file ~/data-explorer/blockscout.env -p 3334:4000 \
+        -v /home/etherum/testnet:/custom_config_data \
+        -v $(pwd)/data-explorer:/data \
+        -it 'skylenet/blockscout:v4.1.5-beta' \
+        sh -c "echo $DATABASE_URL && mix do ecto.create, ecto.migrate && exec mix phx.server"
+
+  - path: /home/blockscout/stop.sh
+    content: |
+      #!/bin/bash
+
+      docker stop el_explorer
+      docker rm el_explorer
+
+
+  - path: /home/beaconchain/setup.sh
+    content: |
+      #!/bin/bash
+      cd /home/beaconchain
+      chmod +x start.sh
+      chmod +x stop.sh
+      chmod +x reset.sh
+
+      mkdir -p ./data-explorer
+      wget -O ./data-explorer/tables.sql https://raw.githubusercontent.com/ethereumjs/consensus-deployment-ansible/master/playbooks/tasks/templates/beaconchain_explorer/tables.sql
+      
+  - path: /home/beaconchain/start.sh
+    content: |
+      #!/bin/bash
+
+      docker run -d --restart unless-stopped --name=cl_explorer \
+        -p 3333:3333 \
+        -v /home/etherum/testnet:/config_testnet \
+        -v $(pwd)/data-explorer:/config \
+        -it 'parithoshj/beacon-explorer:print-chain-id' \
+        ./explorer --config /config/config.yaml
+
+  - path: /home/beaconchain/stop.sh
+    content: |
+      #!/bin/bash
+
+      docker stop cl_explorer
+      docker rm cl_explorer
+
+  - path: /home/beaconchain/explorer-config.yaml
+    content: |
+      # Database credentials
+      database:
+        user: "beaconchain"
+        name: "beaconchain"
+        host: "172.17.0.1"
+        port: "5432"
+        password: "${DB_PASSWORD}"
+      # Chain network configuration
+      chain:
+        slotsPerEpoch: 32
+        secondsPerSlot: 12
+        genesisTimestamp: ${GENESIS_TIMESTAMP}
+        minGenesisActiveValidatorCount: ${MIN_GENESIS_VALIDATORS}
+        mainnet: false
+        phase0path: /config_testnet/config.yaml
+        altairForkEpoch: 0
+      # Note: It is possible to run either the frontend or the indexer or both at the same time
+      # Frontend config
+      frontend:
+        enabled: true # Enable or disable to web frontend
+        imprint: "templates/imprint.example.html"  # Path to the imprint page content
+        siteName: "Testnet Block Chain Explorer" # Name of the site, displayed in the title tag
+        siteSubtitle: "Showing the Test ephemeral testnet" # Subtitle shown on the main page
+        csrfAuthKey: '0123456789abcdef000000000000000000000000000000000000000000000000'
+        jwtSigningSecret: "0123456789abcdef000000000000000000000000000000000000000000000000"
+        jwtIssuer: "testnetexplorer"
+        jwtValidityInMinutes: 30
+        server:
+          host: "0.0.0.0" # Address to listen on
+          port: "3333" # Port to listen on
+        database:
+          user: "beaconchain"
+          name: "beaconchain"
+          host: "172.17.0.1"
+          port: "5432"
+          password: "${DB_PASSWORD}"
+        #sessionSecret: "<sessionSecret>"
+        #flashSecret: "" # Encryption secret for flash cookies
+      # Indexer config
+      indexer:
+        enabled: true # Enable or disable the indexing service
+        fullIndexOnStartup: false # Perform a one time full db index on startup
+        indexMissingEpochsOnStartup: false # Check for missing epochs and export them after startup
+        node:
+          host: "172.17.0.1" # Address of the backend node
+          port: "5052" # port of the backend node
+          type: "lighthouse" # can be either prysm or lighthouse
+          pageSize: 100 # the amount of entries to fetch per paged rpc call
+        eth1Endpoint: 'http://172.17.0.1:8545'
+        eth1DepositContractAddress: '${DEPOSIT_CONTRACT_ADDR}'
+        eth1DepositContractFirstBlock: ${DEPOSIT_CONTRACT_BLOCK}
+
+  - path: /home/beaconchain/reset.sh
+    content: |
+      #!/bin/bash
+      cd /home/beaconchain
+
+      # assume a clean database here
+      # import tables
+      psql -f ./data-explorer/tables.sql
+
+      # generate explorer configuration
+      export DB_PASSWORD=$(cat ./.dbpassword.txt | tr -d " \n")
+
+      cl_config=/home/etherum/testnet/config.yaml
+      genesis_time=$(cat $cl_config | grep "MIN_GENESIS_TIME" | sed 's/^.*: \(.*\)$/\1/')
+      genesis_delay=$(cat $cl_config | grep "GENESIS_DELAY" | sed 's/^.*: \(.*\)$/\1/')
+      export GENESIS_TIMESTAMP=$(expr $genesis_time + $genesis_delay)
+      export MIN_GENESIS_VALIDATORS=$(cat $cl_config | grep "MIN_GENESIS_ACTIVE_VALIDATOR_COUNT" | sed 's/^.*: \(.*\)$/\1/')
+
+      export DEPOSIT_CONTRACT_ADDR=$(cat /home/etherum/testnet/deposit_contract.txt | tr -d " \n")
+      export DEPOSIT_CONTRACT_BLOCK=$(cat /home/etherum/testnet/deploy_block.txt | tr -d " \n")
+      
+      envsubst < ./explorer-config.yaml > ./data-explorer/config.yaml
+
+runcmd:
+  - [ chmod, +x, /root/setup.sh ]
+  - [ /root/setup.sh ]
+  - [ chown, -R, "etherum:etherum", /home/etherum ]
+  - [ chmod, +x, /home/etherum/update.sh ]
+  - [ sudo, -u, etherum, /home/etherum/update.sh ]
+  - [ systemctl, daemon-reload ]
+  - [ systemctl, enable, geth.service ]
+  - [ systemctl, enable, beacon-chain.service ]
+  - [ systemctl, enable, validator.service ]
+  - [ chmod, +x, /home/etherum/setup-validators.sh ]
+  - [ sudo, -u, etherum, /home/etherum/setup-validators.sh ]
+  - [ chmod, +x, /home/blockscout/setup.sh ]
+  - [ sudo, -u, blockscout, /home/blockscout/setup.sh ]
+  - [ chmod, +x, /home/beaconchain/setup.sh ]
+  - [ sudo, -u, beaconchain, /home/beaconchain/setup.sh ]
+  - [ chmod, +x, /home/etherum/setup-retention.sh ]
+  - [ sudo, -u, etherum, /home/etherum/setup-retention.sh ]
