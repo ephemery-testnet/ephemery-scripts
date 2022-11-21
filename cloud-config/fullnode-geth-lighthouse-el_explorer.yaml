@@ -331,6 +331,7 @@ write_files:
       chmod +x stop.sh
 
       mkdir -p ./data-explorer
+      source /home/etherum/testnet/nodevars_env.txt
 
       echo "MIX_ENV=prod" > ./data-explorer/blockscout.env
       echo "INDEXER_DISABLE_INTERNAL_TRANSACTIONS_FETCHER=false" >> ./data-explorer/blockscout.env
@@ -350,7 +351,7 @@ write_files:
       echo "ETHEREUM_JSONRPC_WS_URL=ws://172.17.0.1:8546" >> ./data-explorer/blockscout.env
       echo "NETWORK=Ethereum" >> ./data-explorer/blockscout.env
       echo "SUBNETWORK=Testnet" >> ./data-explorer/blockscout.env
-      echo "LOGO_TEXT=Test ephemeral testnet" >> ./data-explorer/blockscout.env
+      echo "LOGO_TEXT=Ephemery Testnet (Iteration $ITERATION_NUMBER)" >> ./data-explorer/blockscout.env
       echo "BLOCK_TRANSFORMER=base" >> ./data-explorer/blockscout.env
       echo "POOL_SIZE=15" >> ./data-explorer/blockscout.env
       echo "CHAIN_SPEC_PATH=/custom_config_data/genesis.json" >> ./data-explorer/blockscout.env
