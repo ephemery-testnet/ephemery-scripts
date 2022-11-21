@@ -309,8 +309,11 @@ write_files:
         echo "genesis timeout: $(expr $testnet_timeout - $current_time) sec"
         if [ $testnet_timeout -le $current_time ]; then
           genesis_release=$(get_github_release $genesis_repository)
-          if [ $genesis_release -le $CHAIN_ID ]; then
-            echo "could not find new genesis release (local: $CHAIN_ID, latest: $genesis_release)"
+          if ! [ $ITERATION_RELEASE ]; then
+            ITERATION_RELEASE=$CHAIN_ID
+          fi
+          if [ $genesis_release = $ITERATION_RELEASE ]; then
+            echo "could not find new genesis release (release: $genesis_release)"
             return 0
           fi
           
