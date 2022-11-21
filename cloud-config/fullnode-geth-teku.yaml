@@ -68,7 +68,7 @@ write_files:
       [Service]
       User            = etherum
       WorkingDirectory= /home/etherum/teku
-      ExecStart       = /home/etherum/teku/bin/teku validator-client --network=/home/etherum/testnet/config.yaml --beacon-node-api-endpoint=http://localhost:5051 --validator-keys=/home/etherum/data-keys/teku-keys:/home/etherum/data-keys/teku-secrets --validators-proposer-default-fee-recipient=0x14627ea0e2B27b817DbfF94c3dA383bB73F8C30b
+      ExecStart       = /home/etherum/teku/bin/teku validator-client --network=/home/etherum/testnet/config.yaml --beacon-node-api-endpoint=http://localhost:5051 --validator-keys=/home/etherum/data-keys/teku-keys:/home/etherum/data-keys/teku-secrets --validators-graffiti="pk910 (3)" --validators-proposer-default-fee-recipient=0x14627ea0e2B27b817DbfF94c3dA383bB73F8C30b
       Restart         = on-failure
 
       [Install]

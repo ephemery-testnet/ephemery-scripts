@@ -423,7 +423,7 @@ write_files:
       docker run -d --restart unless-stopped --name=cl_explorer \
         -p 3333:3333 \
         -v /home/etherum/testnet:/config_testnet \
-        -v $(pwd)/data-explorer:/config \
+        -v /home/beaconchain/data-explorer:/config \
         -it 'parithoshj/beacon-explorer:print-chain-id' \
         ./explorer --config /config/config.yaml
 
