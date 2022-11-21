@@ -345,7 +345,7 @@ write_files:
       validator_mnemonic=""
       validator_count=100
 
-      if ! [ $validator_mnemonic = "" ]; then
+      if [ $validator_mnemonic ]; then
         echo $validator_mnemonic | lighthouse/lighthouse account validator recover --datadir /home/etherum/data-lh --stdin-inputs --count $validator_count
       fi
 
@@ -512,6 +512,8 @@ runcmd:
   - [ chmod, +x, /root/setup.sh ]
   - [ /root/setup.sh ]
   - [ chown, -R, "etherum:etherum", /home/etherum ]
+  - [ chown, -R, "blockscout:blockscout", /home/blockscout ]
+  - [ chown, -R, "beaconchain:beaconchain", /home/beaconchain ]
   - [ chmod, +x, /home/etherum/update.sh ]
   - [ sudo, -u, etherum, /home/etherum/update.sh ]
   - [ systemctl, daemon-reload ]
