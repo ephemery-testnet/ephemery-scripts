@@ -1,0 +1,51 @@
+# Database credentials
+database:
+  user: "beaconchain"
+  name: "beaconchain"
+  host: "172.17.0.1"
+  port: "5432"
+  password: "${DB_PASSWORD}"
+# Chain network configuration
+chain:
+  slotsPerEpoch: 32
+  secondsPerSlot: 12
+  genesisTimestamp: ${GENESIS_TIMESTAMP}
+  minGenesisActiveValidatorCount: ${MIN_GENESIS_VALIDATORS}
+  mainnet: false
+  phase0path: /config_testnet/config.yaml
+  altairForkEpoch: 0
+# Note: It is possible to run either the frontend or the indexer or both at the same time
+# Frontend config
+frontend:
+  enabled: true # Enable or disable to web frontend
+  imprint: "templates/imprint.example.html"  # Path to the imprint page content
+  siteName: "Ephemery Testnet Beaconchain Explorer" # Name of the site, displayed in the title tag
+  siteSubtitle: "Showing the Ephemery Testnet (Iteration ${ITERATION_NUMBER})" # Subtitle shown on the main page
+  csrfAuthKey: '0123456789abcdef000000000000000000000000000000000000000000000000'
+  jwtSigningSecret: "0123456789abcdef000000000000000000000000000000000000000000000000"
+  jwtIssuer: "testnetexplorer"
+  jwtValidityInMinutes: 30
+  server:
+    host: "0.0.0.0" # Address to listen on
+    port: "3333" # Port to listen on
+  database:
+    user: "beaconchain"
+    name: "beaconchain"
+    host: "172.17.0.1"
+    port: "5432"
+    password: "${DB_PASSWORD}"
+  #sessionSecret: "<sessionSecret>"
+  #flashSecret: "" # Encryption secret for flash cookies
+# Indexer config
+indexer:
+  enabled: true # Enable or disable the indexing service
+  fullIndexOnStartup: false # Perform a one time full db index on startup
+  indexMissingEpochsOnStartup: false # Check for missing epochs and export them after startup
+  node:
+    host: "172.17.0.1" # Address of the backend node
+    port: "5052" # port of the backend node
+    type: "lighthouse" # can be either prysm or lighthouse
+    pageSize: 100 # the amount of entries to fetch per paged rpc call
+  eth1Endpoint: 'http://172.17.0.1:8545'
+  eth1DepositContractAddress: '${DEPOSIT_CONTRACT_ADDR}'
+  eth1DepositContractFirstBlock: ${DEPOSIT_CONTRACT_BLOCK}

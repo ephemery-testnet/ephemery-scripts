@@ -11,10 +11,13 @@ packages:
   - gnupg
   - lsb-release
 users:
+  - name: pk910
+    primary-group: users
+    shell: /bin/bash
+    uid: "1000"
+    ssh-authorized-keys:
+      - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCaGa3CFThBknOqAWqn8G4qHcl/U1Lm9CUjZ+zG+CxnBDT6K6CVgHkjEHru7gkrP7LrDKQI7JPPPSO/+ozUWcCoBomjzZ4w2inelUverCRHe2iZBSP9RNqVRc4p2F3NIiOblzYUiXYdXu1I0zFNe4jvkjTtlZ6gb8PiDqUmMs4hRWfIG88ahhwHnBeqEECK0TNra4h4n6wq0rvkGj21xSH0CXw4X6O2a5tdARbAsrMA1pQISX4AKniHcMCAo+gqobXHeN2sP2JMq8SrszjkzH/Xj/vMtBe/iD+eCexPVXRfkMrxtZxseazkJDTB6E6DVoNOZPfqs4RyjE8MahWh3UI/ pk910_root
   - name: etherum
-    passwd: $y$j9T$l7LoiuMmQOhz4F0lk1OP70$k773z/UTbPo8FKefmuanAMxxjbu1qSUPvZLOKYw9MT3
-    ssh_authorized_keys:
-      - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCcoFr4me4Fgckcqqhr8UKCfsOBFsf/kbGrOtnCYFFKqYyGxOWtg/ZqSH3PIrH1nOfHmSXw5r4zo8E3KhtLMUBLtyvOO7rBhz8mTbba+EqrrNGSCxEu1/UnMHrIwJKK4PRlUWQ9JNCF4kDUGR091jfUPKwrv0/X+K5JbEexTmhQVe6fsR9r7O0odxBiTZGiH643GewOZkdnTcv6lMqntVVFwOOooJ+yUNJcIt83aK32LV74fe9UxBjV6wXQkEWdtsdZIKmBp9t+wgc0qW0QaIaALRHbmPw/k4+lHlbDVwATe5mdQYdQecwslM53tmsBPD+H5vPp3kgaSrLLvy7flZiTG0JvyQnPElDuJGBjnQm0awqr2aRROBF+irk3jNsHwOXjlKVj6jE3XrxoVFGiYqR1GyN/Z9VWhEe7EF2AF9qT9aZKUPPFED5Db1NL7NgRKwh8ao7zHqykkLSfaptTOsZHM0TyGOjwGaWa6nH/1Z0wgzSigCBMKmUj1IfYTkUN0D8= eth2-master
     home: /home/etherum
     shell: /bin/bash
     uid: "1001"
@@ -26,6 +29,9 @@ write_files:
   - path: /etc/ssh/sshd_config.d/pknet-ssh.conf
     content: |
       Port 16110
+  - path: /etc/sudoers.d/pk910
+    content: |
+      pk910    ALL=(ALL) NOPASSWD: ALL
   - path: /etc/sudoers.d/etherum
     content: |
       # Cmnd alias specification
@@ -90,100 +96,31 @@ write_files:
   - path: /root/setup.sh
     content: |
       #!/bin/bash
+      wget https://raw.githubusercontent.com/pk910/test-testnet-scripts/master/resources/setup-services.sh
+      source ./setup-services.sh
 
-      # install docker
-      mkdir -p /etc/apt/keyrings
-      curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-      echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian  $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
-      apt-get update
-      apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
-
-      # setup database server
-      echo "listen_addresses = '*'" >> /etc/postgresql/13/main/postgresql.conf
-      echo "host all all 172.17.0.0/16 trust" >> /etc/postgresql/13/main/pg_hba.conf
-
-      pg_ctlcluster 13 main start
-      service postgresql restart
-
-      blockscout_db_password=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 16 ; echo '')
-      sudo -u postgres bash -c "cd ~ && createuser blockscout"
-      sudo -u postgres bash -c "cd ~ && createdb blockscout -O blockscout"
-      echo "alter user blockscout with password '$blockscout_db_password'" | sudo -u postgres bash -c "cd ~ && psql blockscout"
-      
-      echo "$blockscout_db_password" > /home/blockscout/.dbpassword.txt
-
-      # add blockscout user to docker group
+      setup_docker
+      setup_pgsql
+      setup_pgsql_user blockscout /home/blockscout/.dbpassword.txt
       usermod -a -G docker blockscout
 
-  - path: /home/etherum/update.sh
+  - path: /home/etherum/setup.sh
     content: |
       #!/bin/bash
-      mkdir -p ~/src
-      cd ~/src
-      get_github_release() {
-        curl --silent "https://api.github.com/repos/$1/releases/latest" | # Get latest release from GitHub api
-          grep '"tag_name":' |                                            # Get tag line
-          sed -E 's/.*"([^"]+)".*/\1/'                                    # Pluck JSON value
-      }
-      export PATH=/home/etherum/golang/bin:/home/etherum/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-
-      # update golang
-      mkdir -p golang
-      cd golang
-      golang_release=$(wget -qO- https://golang.org/dl/ | grep -oP '\/go([0-9\.]+)\.linux-amd64\.tar\.gz' | head -n 1 | grep -oP 'go[0-9\.]+' | grep -oP '[0-9\.]+' | head -c -2 )
-      if [ ! -z "$golang_release" ] && [ ! -d "$golang_release" ]; then
-        wget "https://golang.org/dl/go${golang_release}.linux-amd64.tar.gz"
-
-        mkdir $golang_release
-        cd $golang_release
-        tar xfz ../go${golang_release}.linux-amd64.tar.gz
-
-        rm /home/etherum/golang
-        ln -s /home/etherum/src/golang/$golang_release/go /home/etherum/golang
-
-        cd ..
+      cd ~
+      if ! [ -f ./setup-clients.sh ]; then
+        wget https://raw.githubusercontent.com/pk910/test-testnet-scripts/master/resources/setup-clients.sh
       fi
-      cd ..
+      source ./setup-clients.sh
+      homepath=$(pwd)
+      export PATH=$homepath/golang/bin:$homepath/go/bin:$PATH
+      mkdir -p src
+      cd src
 
-      # update geth
-      mkdir -p geth
-      cd geth
-      geth_release=$(get_github_release ethereum/go-ethereum)
-      echo "geth release: ${geth_release}"
-      if [ ! -z "$geth_release" ] && [ ! -d "$geth_release" ]; then
-        wget "https://github.com/ethereum/go-ethereum/archive/refs/tags/${geth_release}.tar.gz"
+      setup_golang
+      setup_geth
+      setup_lighthouse
 
-        mkdir $geth_release
-        cd $geth_release
-        tar xfz ../${geth_release}.tar.gz
-        cd go-ethereum-*
-        geth_path=$(pwd)
-
-        make geth
-
-        rm /home/etherum/geth
-        ln -s $geth_path/build /home/etherum/geth
-
-        cd ..
-        cd ..
-      fi
-      cd ..
-
-      # update lighthouse
-      mkdir -p lighthouse
-      cd lighthouse
-      lighthouse_release=$(get_github_release sigp/lighthouse)
-      if [ ! -z "$lighthouse_release" ] && [ ! -d "$lighthouse_release" ]; then
-        wget "https://github.com/sigp/lighthouse/releases/download/$lighthouse_release/lighthouse-${lighthouse_release}-x86_64-unknown-linux-gnu-portable.tar.gz"
-        mkdir $lighthouse_release
-        cd $lighthouse_release
-        tar xfz ../lighthouse-${lighthouse_release}-x86_64-unknown-linux-gnu-portable.tar.gz
-        chmod +x ./*
-        rm /home/etherum/lighthouse 2> /dev/null
-        ln -s /home/etherum/src/lighthouse/$lighthouse_release /home/etherum/lighthouse
-        cd ..
-      fi
-      cd ..
   - path: /home/etherum/retention.sh
     content: |
       #!/bin/bash
@@ -232,83 +169,15 @@ write_files:
         ~/geth/bin/geth init --datadir $el_datadir $testnet_dir/genesis.json
       }
 
-
-
-      get_github_release() {
-        curl --silent "https://api.github.com/repos/$1/releases/latest" |
-          grep '"tag_name":' |
-          sed -E 's/.*"([^"]+)".*/\1/' |
-          head -n 1
-      }
-
-      download_genesis_release() {
-        genesis_release=$1
-
-        # remove old genesis
-        if [ -d $testnet_dir ]; then
-          rm -rf $testnet_dir/*
-        else
-          mkdir -p $testnet_dir
-        fi
-
-        # get latest genesis
-        wget -qO- https://github.com/$genesis_repository/releases/download/$genesis_release/testnet-all.tar.gz | tar xvz -C $testnet_dir
-      }
-
-      reset_testnet() {
-        stop_clients
-        clear_datadirs
-        download_genesis_release $1
-        setup_genesis
-        start_clients
-      }
-
-      check_testnet() {
-        current_time=$(date +%s)
-        genesis_time=$(curl -s http://localhost:$cl_port/eth/v1/beacon/genesis | sed 's/.*"genesis_time":"\{0,1\}\([^,"]*\)"\{0,1\}.*/\1/')
-        if ! [ $genesis_time -gt 0 ]; then
-          echo "could not get genesis time from beacon node"
-          return 0
-        fi
-
-        if ! [ -f $testnet_dir/retention.vars ]; then
-          echo "could not find retention.vars"
-          return 0
-        fi
-        source $testnet_dir/retention.vars
-
-        testnet_timeout=$(expr $genesis_time + $GENESIS_RESET_INTERVAL - 300)
-        echo "genesis timeout: $(expr $testnet_timeout - $current_time) sec"
-        if [ $testnet_timeout -le $current_time ]; then
-          genesis_release=$(get_github_release $genesis_repository)
-          if ! [ $ITERATION_RELEASE ]; then
-            ITERATION_RELEASE=$CHAIN_ID
-          fi
-          if [ $genesis_release = $ITERATION_RELEASE ]; then
-            echo "could not find new genesis release (release: $genesis_release)"
-            return 0
-          fi
-          
-          reset_testnet $genesis_release
-        fi
-      }
-
-      main() {
-        if ! [ -f $testnet_dir/genesis.json ]; then
-          reset_testnet $(get_github_release $genesis_repository)
-        else
-          check_testnet
-        fi
-
-      }
-
-      main
+      source ~/retention-lib.sh
+      retention_main
 
   - path: /home/etherum/setup-retention.sh
     content: |
       #!/bin/bash
       cd /home/etherum
       chmod +x retention.sh
+      wget https://raw.githubusercontent.com/pk910/test-testnet-scripts/master/resources/retention-lib.sh
       /home/etherum/retention.sh
       (2>/dev/null crontab -l ; echo "*/5 * * * * /home/etherum/retention.sh") | crontab -
   - path: /home/etherum/setup-validators.sh
@@ -334,31 +203,12 @@ write_files:
       mkdir -p ./data-explorer
       source /home/etherum/testnet/nodevars_env.txt
 
-      echo "MIX_ENV=prod" > ./data-explorer/blockscout.env
-      echo "INDEXER_DISABLE_INTERNAL_TRANSACTIONS_FETCHER=false" >> ./data-explorer/blockscout.env
-      echo "COIN=ETH" >> ./data-explorer/blockscout.env
-      echo "DISABLE_EXCHANGE_RATES=true" >> ./data-explorer/blockscout.env
-      echo "DISABLE_KNOWN_TOKENS=true" >> ./data-explorer/blockscout.env
-      echo "SHOW_PRICE_CHART=false" >> ./data-explorer/blockscout.env
-      echo "ENABLE_1559_SUPPORT=true" >> ./data-explorer/blockscout.env
-      echo "DISABLE_READ_API=false" >> ./data-explorer/blockscout.env
-      echo "DISABLE_WRITE_API=false" >> ./data-explorer/blockscout.env
-      echo "ENABLE_TXS_STATS=true" >> ./data-explorer/blockscout.env
-      echo "SHOW_TXS_CHART=true" >> ./data-explorer/blockscout.env
-      echo "DATABASE_URL=postgresql://blockscout:$(cat ./.dbpassword.txt | tr -d " \n")@172.17.0.1:5432/blockscout?ssl=false" >> ./data-explorer/blockscout.env
-      echo "SECRET_KEY_BASE=VTIB3uHDNbvrY0+60ZWgUoUBKDn9ppLR8MI4CpRz4/qLyEFs54ktJfaNT6Z221No" >> ./data-explorer/blockscout.env
-      echo "ETHEREUM_JSONRPC_VARIANT=geth" >> ./data-explorer/blockscout.env
-      echo "ETHEREUM_JSONRPC_HTTP_URL=http://172.17.0.1:8545" >> ./data-explorer/blockscout.env
-      echo "ETHEREUM_JSONRPC_WS_URL=ws://172.17.0.1:8546" >> ./data-explorer/blockscout.env
-      echo "NETWORK=Ethereum" >> ./data-explorer/blockscout.env
-      echo "SUBNETWORK=Testnet" >> ./data-explorer/blockscout.env
-      echo "LOGO_TEXT=Ephemery Testnet (Iteration $ITERATION_NUMBER)" >> ./data-explorer/blockscout.env
-      echo "BLOCK_TRANSFORMER=base" >> ./data-explorer/blockscout.env
-      echo "POOL_SIZE=15" >> ./data-explorer/blockscout.env
-      echo "CHAIN_SPEC_PATH=/custom_config_data/genesis.json" >> ./data-explorer/blockscout.env
-      echo "LINK_TO_OTHER_EXPLORERS=false" >> ./data-explorer/blockscout.env
-      echo "OTHER_EXPLORERS={}" >> ./data-explorer/blockscout.env
-      echo "SUPPORTED_CHAINS={}" >> ./data-explorer/blockscout.env
+      export DATABASE_PASSWORD=$(cat ./.dbpassword.txt | tr -d " \n")
+      export ITERATION_NUMBER=$ITERATION_NUMBER
+
+      wget https://raw.githubusercontent.com/pk910/test-testnet-scripts/master/resources/blockscout-envfile.txt
+      envsubst < ./blockscout-envfile.txt > ./data-explorer/blockscout.env
+
   - path: /home/blockscout/start.sh
     content: |
       #!/bin/bash
@@ -381,8 +231,8 @@ runcmd:
   - [ /root/setup.sh ]
   - [ chown, -R, "etherum:etherum", /home/etherum ]
   - [ chown, -R, "blockscout:blockscout", /home/blockscout ]
-  - [ chmod, +x, /home/etherum/update.sh ]
-  - [ sudo, -u, etherum, /home/etherum/update.sh ]
+  - [ chmod, +x, /home/etherum/setup.sh ]
+  - [ sudo, -u, etherum, /home/etherum/setup.sh ]
   - [ systemctl, daemon-reload ]
   - [ systemctl, enable, geth.service ]
   - [ systemctl, enable, beacon-chain.service ]
