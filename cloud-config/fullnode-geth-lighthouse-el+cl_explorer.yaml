@@ -103,8 +103,6 @@ write_files:
 
       sudo -u postgres bash -c "cd ~ && dropdb beaconchain"
       sudo -u postgres bash -c "cd ~ && createdb beaconchain -O beaconchain"
-
-      sudo -u beaconchain /home/beaconchain/setup-tables.sh
       
   - path: /root/setup.sh
     content: |
