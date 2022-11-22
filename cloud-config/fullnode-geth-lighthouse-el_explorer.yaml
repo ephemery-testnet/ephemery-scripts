@@ -167,6 +167,8 @@ write_files:
       setup_genesis() {
         # init el genesis
         ~/geth/bin/geth init --datadir $el_datadir $testnet_dir/genesis.json
+
+        sudo -u blockscout /home/blockscout/reset.sh
       }
 
       source ~/retention-lib.sh
@@ -199,15 +201,10 @@ write_files:
       cd /home/blockscout
       chmod +x start.sh
       chmod +x stop.sh
+      chmod +x reset.sh
 
       mkdir -p ./data-explorer
-      source /home/etherum/testnet/nodevars_env.txt
-
-      export DATABASE_PASSWORD=$(cat ./.dbpassword.txt | tr -d " \n")
-      export ITERATION_NUMBER=$ITERATION_NUMBER
-
       wget https://raw.githubusercontent.com/pk910/test-testnet-scripts/master/resources/blockscout-envfile.txt
-      envsubst < ./blockscout-envfile.txt > ./data-explorer/blockscout.env
 
   - path: /home/blockscout/start.sh
     content: |
@@ -226,6 +223,18 @@ write_files:
 
       docker stop el_explorer
       docker rm el_explorer
+
+  - path: /home/blockscout/reset.sh
+    content: |
+      #!/bin/bash
+      cd /home/blockscout
+      source /home/etherum/testnet/nodevars_env.txt
+
+      export DATABASE_PASSWORD=$(cat ./.dbpassword.txt | tr -d " \n")
+      export ITERATION_NUMBER=$ITERATION_NUMBER
+
+      envsubst < ./blockscout-envfile.txt > ./data-explorer/blockscout.env
+
 runcmd:
   - [ chmod, +x, /root/setup.sh ]
   - [ /root/setup.sh ]
