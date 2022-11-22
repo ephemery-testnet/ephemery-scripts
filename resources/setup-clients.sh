@@ -126,3 +126,22 @@ setup_jwtsecret() {
     echo -n 0x$(openssl rand -hex 32 | tr -d "\n") > $1
   fi
 }
+
+setup_graffiti_daemon() {
+  # update graffiti-daemon
+  mkdir -p graffiti-daemon
+  cd graffiti-daemon
+  gd_release=$(get_github_release pk910/graffiti-daemon)
+  echo "graffiti-daemon release: ${gd_release}"
+  if [ ! -z "$gd_release" ] && [ ! -d "$gd_release" ]; then
+    mkdir $gd_release
+    cd $gd_release
+    wget https://github.com/pk910/graffiti-daemon/releases/download/$gd_release/graffiti-daemon-amd64
+    chmod +x graffiti-daemon-amd64
+    
+    rm /home/etherum/graffiti-daemon 2> /dev/null
+    ln -s /home/etherum/src/graffiti-daemon/$gd_release /home/etherum/graffiti-daemon
+    cd ..
+  fi
+  cd ..
+}
