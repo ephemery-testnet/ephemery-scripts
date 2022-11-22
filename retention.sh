@@ -2,6 +2,7 @@
 
 genesis_repository="pk910/test-testnet-repo"
 testnet_dir=/home/etherum/testnet
+el_client=geth
 el_datadir=/home/etherum/data-geth
 cl_datadir=/home/etherum/data-lh
 cl_port=5052
@@ -10,7 +11,7 @@ cl_port=5052
 start_clients() {
   # start EL / CL clients
   echo "start clients"
-  sudo /bin/systemctl start geth
+  sudo /bin/systemctl start $el_client
   sudo /bin/systemctl start beacon-chain
   sudo /bin/systemctl start validator
 }
@@ -18,7 +19,7 @@ start_clients() {
 stop_clients() {
   # stop EL / CL clients
   echo "stop clients"
-  sudo /bin/systemctl stop geth
+  sudo /bin/systemctl stop $el_client
   sudo /bin/systemctl stop beacon-chain
   sudo /bin/systemctl stop validator
 }
@@ -29,17 +30,24 @@ clear_datadirs() {
     rm -rf $el_datadir/geth
     mkdir $el_datadir/geth
     echo $geth_nodekey > $el_datadir/geth/nodekey
+  elif [ -d $el_datadir/chaindata ]; then
+    erigon_nodekey=$(cat $el_datadir/nodekey)
+    rm -rf $el_datadir/*
+    echo $erigon_nodekey > $el_datadir/nodekey
   fi
-
+  
   rm -rf $cl_datadir/beacon
   rm -rf $cl_datadir/validators/slashing_protection.sqlite
 }
 
 setup_genesis() {
   # init el genesis
+  if [ "$el_client" = "geth" ]; then
   ~/geth/bin/geth init --datadir $el_datadir $testnet_dir/genesis.json
+  elif [ "$el_client" = "erigon" ]; then
+  ~/erigon/build/bin/erigon init --datadir $el_datadir $testnet_dir/genesis.json
+  fi
 }
-
 
 
 get_github_release() {
