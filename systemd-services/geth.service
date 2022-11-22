@@ -7,7 +7,7 @@ After           = network-online.target
 User            = etherum
 WorkingDirectory= /home/etherum/geth
 EnvironmentFile = /home/etherum/testnet/nodevars_env.txt
-ExecStart       = /home/etherum/geth/bin/geth --datadir /home/etherum/data-geth --port 30303 --authrpc.jwtsecret=/home/etherum/jwtsecret --syncmode=full --bootnodes "${BOOTNODE_ENODE_LIST}"
+ExecStart       = /home/etherum/geth/bin/geth --datadir /home/etherum/data-geth --port 30303 --authrpc.jwtsecret=/home/etherum/jwtsecret --syncmode=full --bootnodes "${BOOTNODE_ENODE_LIST}" --networkid ${CHAIN_ID}
 Restart         = on-failure
 
 [Install]
