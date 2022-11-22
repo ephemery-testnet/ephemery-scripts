@@ -35,7 +35,7 @@ write_files:
   - path: /etc/sudoers.d/etherum
     content: |
       # Cmnd alias specification
-      Cmnd_Alias ETH_CMDS = /bin/systemctl stop geth, /bin/systemctl start geth, /bin/systemctl stop beacon-chain, /bin/systemctl start beacon-chain, /bin/systemctl stop validator, /bin/systemctl start validator, /bin/systemctl stop boot-node, /bin/systemctl start boot-node, /home/blockscout/start.sh, /home/blockscout/stop.sh, /root/reset-blockscout-db.sh
+      Cmnd_Alias ETH_CMDS = /bin/systemctl stop geth, /bin/systemctl start geth, /bin/systemctl stop beacon-chain, /bin/systemctl start beacon-chain, /bin/systemctl stop validator, /bin/systemctl start validator, /bin/systemctl stop boot-node, /bin/systemctl start boot-node, /home/blockscout/start.sh, /home/blockscout/stop.sh, /home/blockscout/reset.sh, /root/reset-blockscout-db.sh
 
       # User privilege specification
       etherum    ALL=(ALL) NOPASSWD: ETH_CMDS
@@ -98,6 +98,7 @@ write_files:
       #!/bin/bash
       wget https://raw.githubusercontent.com/pk910/test-testnet-scripts/master/resources/setup-services.sh
       source ./setup-services.sh
+      chmod +x /root/reset-*
 
       setup_docker
       setup_pgsql
