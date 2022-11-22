@@ -120,31 +120,6 @@ setup_teku() {
   cd ..
 }
 
-setup_lodestar() {
-  # update lodestar
-  mkdir -p lodestar
-  cd lodestar
-  lodestar_release=$(get_github_release chainsafe/lodestar)
-  echo "lodestar release: ${lodestar_release}"
-  if [ ! -z "$lodestar_release" ] && [ ! -d "$lodestar_release" ]; then
-    wget "https://github.com/ChainSafe/lodestar/archive/refs/tags/${lodestar_release}.tar.gz"
-    mkdir $lodestar_release
-    cd $lodestar_release
-    tar xfz ../${lodestar_release}.tar.gz
-    cd lodestar-*
-    lodestar_path=$(pwd)
-
-    yarn install --ignore-optional
-    yarn run build
-    
-    rm /home/etherum/lodestar 2> /dev/null
-    ln -s $lodestar_path /home/etherum/lodestar
-    cd ..
-    cd ..
-  fi
-  cd ..
-}
-
 setup_jwtsecret() {
   # create jwtsecret if not found
   if ! [ -f $1 ]; then
