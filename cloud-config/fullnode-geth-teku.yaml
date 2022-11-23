@@ -160,11 +160,13 @@ write_files:
       cd /home/etherum
       export PATH=/home/etherum/golang/bin:/home/etherum/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
-      # validator mnemonic
-      mnemonic="*** INSERT VALIDATOR MNEMONIC HERE ***"
-      validator_count="100"
-      
-      eth2-val-tools keystores --insecure --prysm-pass password --out-loc /home/etherum/data-keys --source-mnemonic "$mnemonic" --source-max 100
+      # ADD YOUR VALIDATOR MNEMONIC HERE
+      validator_mnemonic=""
+      validator_count=100
+
+      if [ ! -z "$validator_mnemonic" ]; then
+        eth2-val-tools keystores --insecure --prysm-pass password --out-loc /home/etherum/data-keys --source-mnemonic "$mnemonic" --source-max 100
+      fi
 runcmd:
   - [ chown, -R, "etherum:etherum", /home/etherum ]
   - [ chmod, +x, /home/etherum/setup.sh ]

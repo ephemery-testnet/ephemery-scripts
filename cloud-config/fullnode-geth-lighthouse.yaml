@@ -161,7 +161,7 @@ write_files:
       validator_mnemonic=""
       validator_count=100
 
-      if [ $validator_mnemonic ]; then
+      if [ ! -z "$validator_mnemonic" ]; then
         echo $validator_mnemonic | lighthouse/lighthouse account validator recover --datadir /home/etherum/data-lh --stdin-inputs --count $validator_count
       fi
 runcmd:
