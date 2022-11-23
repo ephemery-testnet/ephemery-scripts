@@ -45,7 +45,7 @@ write_files:
       User            = etherum
       WorkingDirectory= /home/etherum/erigon
       EnvironmentFile = /home/etherum/testnet/nodevars_env.txt
-      ExecStart       = /home/etherum/erigon/erigon --datadir /home/etherum/data-erigon --port 30303 --http --http.addr 0.0.0.0 --http.port 8545 --http.api eth,net,personal,web3 --ws --ws.addr 0.0.0.0 --ws.port 8546 --ws.api eth,net,personal,web3 --authrpc.jwtsecret=/home/etherum/jwtsecret --syncmode=full --bootnodes "${BOOTNODE_ENODE_LIST}" --networkid ${CHAIN_ID}
+      ExecStart       = /home/etherum/erigon/erigon --datadir /home/etherum/data-erigon --port 30303 --http --http.port 8545 --authrpc.jwtsecret=/home/etherum/jwtsecret  --private.api.addr 127.0.0.1:9091 --authrpc.port 8551 --bootnodes "${BOOTNODE_ENODE_LIST}" --networkid ${CHAIN_ID} --externalcl
       Restart         = on-failure
 
       [Install]
@@ -89,8 +89,7 @@ write_files:
         wget https://raw.githubusercontent.com/pk910/test-testnet-scripts/master/resources/setup-clients.sh
       fi
       source ./setup-clients.sh
-      homepath=$(pwd)
-      export PATH=$homepath/golang/bin:$homepath/go/bin:$PATH
+      export PATH=~/golang/bin:~/go/bin:$PATH
       mkdir -p src
       cd src
 
