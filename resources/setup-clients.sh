@@ -76,9 +76,7 @@ setup_erigon() {
     tar xfz ../erigon_${erigon_version}_linux_amd64.tar.gz
 
     rm ~/erigon
-    ln -s $erigon_path/build ~/erigon
-
-    cd ..
+    ln -s $erigon_path ~/erigon
     cd ..
   fi
   cd ..
