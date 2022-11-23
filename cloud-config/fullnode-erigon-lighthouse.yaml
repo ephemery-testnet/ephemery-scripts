@@ -30,22 +30,22 @@ write_files:
   - path: /etc/sudoers.d/etherum
     content: |
       # Cmnd alias specification
-      Cmnd_Alias ETH_CMDS = /bin/systemctl stop geth, /bin/systemctl start geth, /bin/systemctl stop beacon-chain, /bin/systemctl start beacon-chain, /bin/systemctl stop validator, /bin/systemctl start validator, /bin/systemctl stop boot-node, /bin/systemctl start boot-node
+      Cmnd_Alias ETH_CMDS = /bin/systemctl stop erigon, /bin/systemctl start erigon, /bin/systemctl stop beacon-chain, /bin/systemctl start beacon-chain, /bin/systemctl stop validator, /bin/systemctl start validator, /bin/systemctl stop boot-node, /bin/systemctl start boot-node
 
       # User privilege specification
       etherum    ALL=(ALL) NOPASSWD: ETH_CMDS
-  - path: /etc/systemd/system/geth.service
+  - path: /etc/systemd/system/erigon.service
     content: |
       [Unit]
-      Description     = geth eth1 service
+      Description     = erigon eth1 service
       Wants           = network-online.target
       After           = network-online.target
 
       [Service]
       User            = etherum
-      WorkingDirectory= /home/etherum/geth
+      WorkingDirectory= /home/etherum/erigon
       EnvironmentFile = /home/etherum/testnet/nodevars_env.txt
-      ExecStart       = /home/etherum/geth/bin/geth --datadir /home/etherum/data-geth --port 30303 --http --http.addr 0.0.0.0 --http.port 8545 --http.api eth,net,personal,web3 --ws --ws.addr 0.0.0.0 --ws.port 8546 --ws.api eth,net,personal,web3 --authrpc.jwtsecret=/home/etherum/jwtsecret --syncmode=full --bootnodes "${BOOTNODE_ENODE_LIST}" --networkid ${CHAIN_ID}
+      ExecStart       = /home/etherum/erigon/erigon --datadir /home/etherum/data-erigon --port 30303 --http --http.addr 0.0.0.0 --http.port 8545 --http.api eth,net,personal,web3 --ws --ws.addr 0.0.0.0 --ws.port 8546 --ws.api eth,net,personal,web3 --authrpc.jwtsecret=/home/etherum/jwtsecret --syncmode=full --bootnodes "${BOOTNODE_ENODE_LIST}" --networkid ${CHAIN_ID}
       Restart         = on-failure
 
       [Install]
@@ -95,7 +95,7 @@ write_files:
       cd src
 
       setup_golang
-      setup_geth
+      setup_erigon
       setup_lighthouse
 
   - path: /home/etherum/retention.sh
@@ -104,14 +104,14 @@ write_files:
 
       genesis_repository="pk910/test-testnet-repo"
       testnet_dir=/home/etherum/testnet
-      el_datadir=/home/etherum/data-geth
+      el_datadir=/home/etherum/data-erigon
       cl_datadir=/home/etherum/data-lh
       cl_port=5052
 
       start_clients() {
         # start EL / CL clients
         echo "start clients"
-        sudo /bin/systemctl start geth
+        sudo /bin/systemctl start erigon
         sudo /bin/systemctl start beacon-chain
         sudo /bin/systemctl start validator
       }
@@ -119,17 +119,17 @@ write_files:
       stop_clients() {
         # stop EL / CL clients
         echo "stop clients"
-        sudo /bin/systemctl stop geth
+        sudo /bin/systemctl stop erigon
         sudo /bin/systemctl stop beacon-chain
         sudo /bin/systemctl stop validator
       }
 
       clear_datadirs() {
-        if [ -d $el_datadir/geth ]; then
-          geth_nodekey=$(cat $el_datadir/geth/nodekey)
-          rm -rf $el_datadir/geth
-          mkdir $el_datadir/geth
-          echo $geth_nodekey > $el_datadir/geth/nodekey
+        if [ -d $el_datadir/erigon ]; then
+          erigon_nodekey=$(cat $el_datadir/erigon/nodekey)
+          rm -rf $el_datadir/erigon
+          mkdir $el_datadir/erigon
+          echo $erigon_nodekey > $el_datadir/erigon/nodekey
         fi
 
         rm -rf $cl_datadir/beacon
@@ -138,7 +138,7 @@ write_files:
 
       setup_genesis() {
         # init el genesis
-        ~/geth/bin/geth init --datadir $el_datadir $testnet_dir/genesis.json
+        ~/erigon/erigon init --datadir $el_datadir $testnet_dir/genesis.json
       }
 
       source ~/retention-lib.sh
@@ -169,7 +169,7 @@ runcmd:
   - [ chmod, +x, /home/etherum/setup.sh ]
   - [ sudo, -u, etherum, /home/etherum/setup.sh ]
   - [ systemctl, daemon-reload ]
-  - [ systemctl, enable, geth.service ]
+  - [ systemctl, enable, erigon.service ]
   - [ systemctl, enable, beacon-chain.service ]
   - [ systemctl, enable, validator.service ]
   - [ chmod, +x, /home/etherum/setup-validators.sh ]

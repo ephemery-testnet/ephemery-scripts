@@ -16,10 +16,12 @@ setup_golang() {
 
     mkdir $golang_release
     cd $golang_release
+    golang_path=$(pwd)
+
     tar xfz ../go${golang_release}.linux-amd64.tar.gz
 
-    rm /home/etherum/golang
-    ln -s /home/etherum/src/golang/$golang_release/go /home/etherum/golang
+    rm ~/golang
+    ln -s $golang_path/go ~/golang
 
     cd ..
   fi
@@ -48,8 +50,33 @@ setup_geth() {
 
     make geth
 
-    rm /home/etherum/geth
-    ln -s $geth_path/build /home/etherum/geth
+    rm ~/geth
+    ln -s $geth_path/build ~/geth
+
+    cd ..
+    cd ..
+  fi
+  cd ..
+}
+
+setup_erigon() {
+  # update erigon
+  mkdir -p erigon
+  cd erigon
+  erigon_release=$(get_github_release ledgerwatch/erigon)
+  echo "erigon release: ${erigon_release}"
+  if [ ! -z "$erigon_release" ] && [ ! -d "$erigon_release" ]; then
+    erigon_version=$(echo $erigon_release | sed 's/^v//')
+    wget "https://github.com/ledgerwatch/erigon/releases/download/$erigon_release/erigon_${erigon_version}_linux_amd64.tar.gz"
+
+    mkdir $erigon_release
+    cd $erigon_release
+    erigon_path=$(pwd)
+
+    tar xfz ../erigon_${erigon_version}_linux_amd64.tar.gz
+
+    rm ~/erigon
+    ln -s $erigon_path/build ~/erigon
 
     cd ..
     cd ..
@@ -67,10 +94,12 @@ setup_lighthouse() {
     wget "https://github.com/sigp/lighthouse/releases/download/$lighthouse_release/lighthouse-${lighthouse_release}-x86_64-unknown-linux-gnu-portable.tar.gz"
     mkdir $lighthouse_release
     cd $lighthouse_release
+    lighthouse_path=$(pwd)
+
     tar xfz ../lighthouse-${lighthouse_release}-x86_64-unknown-linux-gnu-portable.tar.gz
     chmod +x ./*
-    rm /home/etherum/lighthouse 2> /dev/null
-    ln -s /home/etherum/src/lighthouse/$lighthouse_release /home/etherum/lighthouse
+    rm ~/lighthouse 2> /dev/null
+    ln -s $lighthouse_path ~/lighthouse
     cd ..
   fi
   cd ..
@@ -93,8 +122,8 @@ setup_lodestar() {
     yarn install --ignore-optional
     yarn run build
     
-    rm /home/etherum/lodestar 2> /dev/null
-    ln -s $lodestar_path /home/etherum/lodestar
+    rm ~/lodestar 2> /dev/null
+    ln -s $lodestar_path ~/lodestar
     cd ..
     cd ..
   fi
@@ -111,10 +140,12 @@ setup_teku() {
     wget https://artifacts.consensys.net/public/teku/raw/names/teku.tar.gz/versions/$teku_release/teku-$teku_release.tar.gz
     mkdir $teku_release
     cd $teku_release
+    teku_path=$(pwd)
+
     tar xfz ../teku-$teku_release.tar.gz
     
-    rm /home/etherum/teku 2> /dev/null
-    ln -s /home/etherum/src/teku/$teku_release/teku-$teku_release /home/etherum/teku
+    rm ~/teku 2> /dev/null
+    ln -s $teku_path/teku-$teku_release ~/teku
     cd ..
   fi
   cd ..
@@ -136,11 +167,13 @@ setup_graffiti_daemon() {
   if [ ! -z "$gd_release" ] && [ ! -d "$gd_release" ]; then
     mkdir $gd_release
     cd $gd_release
+    gd_path=$(pwd)
+
     wget https://github.com/pk910/graffiti-daemon/releases/download/$gd_release/graffiti-daemon-amd64
     chmod +x graffiti-daemon-amd64
     
-    rm /home/etherum/graffiti-daemon 2> /dev/null
-    ln -s /home/etherum/src/graffiti-daemon/$gd_release /home/etherum/graffiti-daemon
+    rm ~/graffiti-daemon 2> /dev/null
+    ln -s $gd_path ~/graffiti-daemon
     cd ..
   fi
   cd ..

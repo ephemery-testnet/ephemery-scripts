@@ -39,7 +39,7 @@ write_files:
       User            = etherum
       WorkingDirectory= /home/etherum/geth
       EnvironmentFile = /home/etherum/testnet/nodevars_env.txt
-      ExecStart       = /home/etherum/geth/bin/geth --datadir /home/etherum/data-geth --port 30303 --http --http.addr 0.0.0.0 --http.port 8545 --http.api eth,net,personal,web3 --ws --ws.addr 0.0.0.0 --ws.port 8546 --ws.api eth,net,personal,web3 --authrpc.jwtsecret=/home/etherum/jwtsecret --syncmode=full --bootnodes "${BOOTNODE_ENODE_LIST}"
+      ExecStart       = /home/etherum/geth/bin/geth --datadir /home/etherum/data-geth --port 30303 --http --http.addr 0.0.0.0 --http.port 8545 --http.api eth,net,personal,web3 --ws --ws.addr 0.0.0.0 --ws.port 8546 --ws.api eth,net,personal,web3 --authrpc.jwtsecret=/home/etherum/jwtsecret --syncmode=full --bootnodes "${BOOTNODE_ENODE_LIST}" --networkid ${CHAIN_ID}
       Restart         = on-failure
 
       [Install]
