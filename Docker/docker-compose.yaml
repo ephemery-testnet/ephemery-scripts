@@ -1,0 +1,46 @@
+version: '3'
+
+services:
+    
+  cl:
+    container_name: lighthouse
+    image: sigp/lighthouse:latest
+    restart: unless-stopped
+    volumes:
+      - ./lh-data:/data/
+      - config:/config
+      - ./testnet:/testnet
+    command: "lighthouse bn --testnet-dir /testnet --datadir /data --staking --metrics --port 9010 --http-address 0.0.0.0 --metrics-address 0.0.0.0 --execution-endpoint http://localhost:8551 --execution-jwt=/config/jwtsecret --boot-nodes ${BOOTNODE_ENR_LIST}"
+    network_mode: "host"
+      
+  el:
+    container_name: geth
+    image: ethereum/client-go:v1.10.26
+    restart: unless-stopped
+    volumes:
+      - ./geth-data:/data/
+      - ./testnet:/testnet
+      - config:/config
+    command: "--datadir /data --syncmode full --port 30303 --authrpc.jwtsecret=/config/jwtsecret --http --http.port 8545 --http.vhosts '*' --authrpc.port 8551 --authrpc.vhosts '*' --bootnodes ${BOOTNODE_ENODE_LIST}"
+    network_mode: "host"
+
+  reset:
+    container_name: resetter
+    image: debian
+    build:
+      context: ./retention
+      dockerfile: ./Dockerfile
+    image: reset-scripts
+    volumes:
+      - ./:/data
+      - ./testnet:/testnet
+      - /var/run/docker.sock:/var/run/docker.sock:ro 
+    environment:
+      - hostdir=$PWD
+    network_mode: "host"
+    depends_on:
+      - cl 
+      - el
+volumes:
+  config:
+
