@@ -38,6 +38,8 @@ clear_datadirs() {
 setup_genesis() {
   # init el genesis
    docker run -v $hostdir:/data ethereum/client-go:v1.10.26 init --datadir /data/geth-data /data/testnet/genesis.json 
+   ID=`cat /data/testnet/nodevars_env.txt | awk -F '"' 'FNR == 2 {print $2}'`
+   sed "s/NET_ID/$ID/" /data/geth-conf.example > /data/geth-data/geth-conf.toml
 }
 
 get_github_release() {

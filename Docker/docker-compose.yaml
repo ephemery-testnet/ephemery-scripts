@@ -21,7 +21,7 @@ services:
       - ./geth-data:/data/
       - ./testnet:/testnet
       - config:/config
-    command: "--datadir /data --syncmode full --port 30303 --authrpc.jwtsecret=/config/jwtsecret --http --http.port 8545 --http.vhosts '*' --authrpc.port 8551 --authrpc.vhosts '*' --bootnodes ${BOOTNODE_ENODE_LIST}"
+    command: "--datadir /data --config /data/geth-conf.toml"
     network_mode: "host"
 
   reset:
