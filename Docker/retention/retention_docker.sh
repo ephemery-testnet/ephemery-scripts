@@ -37,7 +37,7 @@ clear_datadirs() {
 
 setup_genesis() {
   # init el genesis
-   docker run -v $hostdir:/data ethereum/client-go:v1.10.26 init --datadir /data/geth-data /data/testnet/genesis.json 
+   docker run -v $hostdir:/data ethereum/client-go:latest init --datadir /data/geth-data /data/testnet/genesis.json 
    ID=`cat /data/testnet/nodevars_env.txt | awk -F '"' 'FNR == 2 {print $2}'`
    sed "s/NET_ID/$ID/" /data/geth-conf.example > /data/geth-data/geth-conf.toml
 }
@@ -100,7 +100,7 @@ check_timeout() {
   fi
 }
 
-#check if 
+#check if the network is configured to ephemery 
 check_network() {
   
   el_id=`printf "%d\n" $(curl -s -X POST  localhost:8545 -H "Content-Type: application/json"     --data '{"jsonrpc":"2.0", "method":"eth_chainId", "params":[], "id":1}'  | jq -r '.result')`
