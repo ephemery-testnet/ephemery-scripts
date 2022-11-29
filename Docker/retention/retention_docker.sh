@@ -1,26 +1,23 @@
 #!/bin/bash
 
 genesis_repository="pk910/test-testnet-repo"
-testnet_dir=/home/etherum/testnet
-el_datadir=/home/etherum/data-geth
-cl_datadir=/home/etherum/data-lh
+testnet_dir="/data/testnet"
+el_datadir="/data/geth-data"
+cl_datadir="/data/lh-data"
 cl_port=5052
-
 
 start_clients() {
   # start EL / CL clients
   echo "start clients"
-  sudo /bin/systemctl start geth
-  sudo /bin/systemctl start beacon-chain
-  sudo /bin/systemctl start validator
+  docker start geth
+  docker start lighthouse
 }
 
 stop_clients() {
   # stop EL / CL clients
   echo "stop clients"
-  sudo /bin/systemctl stop geth
-  sudo /bin/systemctl stop beacon-chain
-  sudo /bin/systemctl stop validator
+  docker stop geth
+  docker stop lighthouse
 }
 
 clear_datadirs() {
@@ -29,22 +26,24 @@ clear_datadirs() {
     rm -rf $el_datadir/geth
     mkdir $el_datadir/geth
     echo $geth_nodekey > $el_datadir/geth/nodekey
+  elif [ -d $el_datadir/chaindata ]; then
+    erigon_nodekey=$(cat $el_datadir/nodekey)
+    rm -rf $el_datadir/*
+    echo $erigon_nodekey > $el_datadir/nodekey
   fi
-
   rm -rf $cl_datadir/beacon
   rm -rf $cl_datadir/validators/slashing_protection.sqlite
 }
 
 setup_genesis() {
   # init el genesis
-  ~/geth/bin/geth init --datadir $el_datadir $testnet_dir/genesis.json
+   docker run -v $hostdir:/data ethereum/client-go:latest init --datadir /data/geth-data /data/testnet/genesis.json 
+   ID=`cat /data/testnet/nodevars_env.txt | awk -F '"' 'FNR == 2 {print $2}'`
+   sed "s/NET_ID/$ID/" /data/geth-conf.example > /data/geth-data/geth-conf.toml
 }
 
 get_github_release() {
-  curl --silent "https://api.github.com/repos/$1/releases/latest" |
-    grep '"tag_name":' |
-    sed -E 's/.*"([^"]+)".*/\1/' |
-    head -n 1
+  curl --silent "https://api.github.com/repos/$1/releases/latest" | jq -r '.tag_name'
 }
 
 download_genesis_release() {
@@ -58,7 +57,10 @@ download_genesis_release() {
   fi
 
   # get latest genesis
+  echo "Pulling latest network specs $genesis_release"
   wget -qO- https://github.com/$genesis_repository/releases/download/$genesis_release/testnet-all.tar.gz | tar xvz -C $testnet_dir
+  cp $testnet_dir/nodevars_env.txt /data/.env 
+  echo copied
 }
 
 reset_testnet() {
@@ -69,9 +71,9 @@ reset_testnet() {
   start_clients
 }
 
-check_testnet() {
+check_timeout() {
   current_time=$(date +%s)
-  genesis_time=$(curl -s http://localhost:$cl_port/eth/v1/beacon/genesis | sed 's/.*"genesis_time":"\{0,1\}\([^,"]*\)"\{0,1\}.*/\1/')
+  genesis_time=$(curl -s http://localhost:$cl_port/eth/v1/beacon/genesis | jq -r '.data.genesis_time')
   if ! [ $genesis_time -gt 0 ]; then
     echo "could not get genesis time from beacon node"
     return 0
@@ -94,18 +96,41 @@ check_testnet() {
       echo "could not find new genesis release (release: $genesis_release)"
       return 0
     fi
-    
     reset_testnet $genesis_release
   fi
 }
 
-main() {
-  if ! [ -f $testnet_dir/genesis.json ]; then
-    reset_testnet $(get_github_release $genesis_repository)
-  else
-    check_testnet
-  fi
+#check if the network is configured to ephemery 
+check_network() {
+  
+  el_id=`printf "%d\n" $(curl -s -X POST  localhost:8545 -H "Content-Type: application/json"     --data '{"jsonrpc":"2.0", "method":"eth_chainId", "params":[], "id":1}'  | jq -r '.result')`
+  net_id=`cat testnet/genesis.json | jq -r '.config.chainId'`
 
+  cl_time=`curl -s localhost:5052/eth/v1/beacon/genesis | jq -r '.data.genesis_time'`
+  net_time=`cat testnet/genesis.json  | jq -r ".timestamp"`
+
+  if ! [ $el_id -eq $net_id ] || ! [[ $cl_time -eq $net_time+300 ]]; then
+    reset_testnet $(get_github_release $genesis_repository)
+  fi
+}
+
+main() {
+
+if ! [ -f $testnet_dir/genesis.json ]; then
+  echo "Resetting testnet"
+  reset_testnet $(get_github_release $genesis_repository)
+fi
+
+sleep 5
+check_timeout
+check_network
+
+while [ 1 ] 
+do
+check_timeout
+sleep 60
+done
 }
 
 main
+
