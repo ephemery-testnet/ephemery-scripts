@@ -28,3 +28,57 @@ cd test-testnet-scripts/Docker
 docker-compose up
 ```
 Currently it only includes single client pair with automatic restart and needs more work. Feel free to extend it with other options. 
+
+## Manual deployment
+
+You can manually run a node by following these instructions.
+
+Warning: you will need to manually reset your system when the testnet is reset.
+
+### Prerequisites
+
+[Install golang](https://go.dev/doc/install) for your system.
+
+Then:
+```
+sudo apt install -y git default-jre make gcc
+```
+
+### Download config
+
+```
+mkdir testnet-all
+cd testnet-all
+```
+
+Download the `testnet-all.tar.gz` file for the [latest release of the Ephemery testnet](https://github.com/pk910/test-testnet-repo/releases) to this directory using `wget`. Then unzip inside this folder.
+```
+tar -xzf testnet-all.tar.gz
+```
+
+### Execution Layer
+
+Download and build software:
+```
+cd ~
+git clone https://github.com/ethereum/go-ethereum.git
+cd go-ethereum
+make geth
+```
+Initialise:
+```
+cd ~
+./go-ethereum/build/bin/geth init --datadir "datadir-geth" ~/testnet-all/genesis.json
+```
+Run:
+```
+./go-ethereum/build/bin/geth \
+     --networkid {networkID} \
+     --syncmode=full \
+     --port 30303 \
+     --datadir "datadir-geth" \
+     --http \
+     --authrpc.jwtsecret=/tmp/jwtsecret \
+     --bootnodes {bootnodes}
+```
+
