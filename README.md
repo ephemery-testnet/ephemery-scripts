@@ -82,6 +82,7 @@ Run:
      --networkid {networkID} \
      --syncmode=full \
      --port 30303 \
+     --http \
      --datadir "datadir-geth" \
      --authrpc.jwtsecret=/tmp/jwtsecret \
      --bootnodes {bootnodes}
@@ -91,6 +92,8 @@ For `{bootnodes}` look in ~/testnet-all/boot_enode.txt
 For `{networkID}` look for `chainId` in ~/testnet-all/genesis.json
 
 ### Consensus Layer
+
+Open a new terminal session.
 
 Download and build software:
 ```
@@ -102,7 +105,8 @@ cd teku
 Run:
 ```
 ./teku/build/install/teku/bin/teku \
-    --network /home/ubuntu/config.yaml \
+    --network ~/testnet-all/config.yaml \
+    --initial-state ~/testnet-all/genesis.ssz \
     --data-path "datadir-teku" \
     --ee-endpoint http://localhost:8551 \
     --ee-jwt-secret-file "/tmp/jwtsecret" \
@@ -110,4 +114,4 @@ Run:
     --p2p-discovery-bootnodes {bootnodes}
 ```
 
-For `{bootnodes}` look in ~/testnet-all/boot_env.txt
+For `{bootnodes}` look in ~/testnet-all/boot_enr.txt. Entries must be separated,by,commas and "enclosed in quotes".
