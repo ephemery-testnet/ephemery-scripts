@@ -28,3 +28,11 @@ cd test-testnet-scripts/Docker
 docker-compose up
 ```
 Currently it only includes single client pair with automatic restart and needs more work. Feel free to extend it with other options. 
+
+## Manual deployment
+
+If you simply want to run a node on Ephemery, you can manually set this up by following one of the sets of instructions below.
+
+Warning: you will need to manually reset your system when the testnet is reset.
+
+- [geth + teku](./manual/setup-geku.md)
