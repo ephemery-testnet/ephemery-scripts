@@ -56,6 +56,12 @@ Download the `testnet-all.tar.gz` file for the [latest release of the Ephemery t
 tar -xzf testnet-all.tar.gz
 ```
 
+### Generate jwt
+
+```
+openssl rand -hex 32 | tr -d "\n" > "/tmp/jwtsecret"
+```
+
 ### Execution Layer
 
 Download and build software:
@@ -77,8 +83,31 @@ Run:
      --syncmode=full \
      --port 30303 \
      --datadir "datadir-geth" \
-     --http \
      --authrpc.jwtsecret=/tmp/jwtsecret \
      --bootnodes {bootnodes}
 ```
 
+For `{bootnodes}` look in ~/testnet-all/boot_enode.txt
+For `{networkID}` look for `chainId` in ~/testnet-all/genesis.json
+
+### Consensus Layer
+
+Download and build software:
+```
+cd ~
+git clone https://github.com/ConsenSys/teku.git
+cd teku
+./gradlew installDist
+```
+Run:
+```
+./teku/build/install/teku/bin/teku \
+    --network /home/ubuntu/config.yaml \
+    --data-path "datadir-teku" \
+    --ee-endpoint http://localhost:8551 \
+    --ee-jwt-secret-file "/tmp/jwtsecret" \
+    --log-destination console \
+    --p2p-discovery-bootnodes {bootnodes}
+```
+
+For `{bootnodes}` look in ~/testnet-all/boot_env.txt
