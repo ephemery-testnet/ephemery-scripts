@@ -1,0 +1,8 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "geth-lighthouse.serviceAccountName" . }}
+  labels:
+    {{- include "geth-lighthouse.labels" . | nindent 4 }}
+rules:
+{{- toYaml .Values.global.rbac.clusterRules | nindent 0 }}

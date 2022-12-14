@@ -1,0 +1,237 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "geth-lighthouse.fullname" . }}
+  labels:
+    {{- include "geth-lighthouse.labels" . | nindent 4 }}
+  annotations:
+    {{- toYaml .Values.global.statefulSetAnnotations | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "geth-lighthouse.selectorLabels" . | nindent 6 }}
+  updateStrategy:
+    {{- toYaml .Values.global.updateStrategy | nindent 4 }}
+  template:
+    metadata:
+      labels:
+        {{- include "geth-lighthouse.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "geth-lighthouse.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.global.securityContext | nindent 8 }}
+      initContainers:
+        # InitContainer
+        - name: init
+          image: "{{ .Values.InitContainer.image.repository }}:{{ .Values.InitContainer.image.tag }}"
+          imagePullPolicy: {{ .Values.InitContainer.image.pullPolicy }}
+          securityContext:
+            runAsNonRoot: false
+            runAsUser: 0
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          # Chown data directory, generate jwt for execution client <-> consensus client communication and get external ip for p2p
+          # Optionally load latest ephermy config
+          command: 
+            - bash
+            - -c
+            - >
+              chown -R 1001:1001 /data;
+              mkdir -p /data/common;
+              openssl rand -hex 32 > /data/common/jwt.hex;
+              echo -n PUBLIC_IP=$(curl http://icanhazip.com) > /data/common/publicip.env;
+              cat /data/common/publicip.env;
+              {{- if .Values.ephermy.enabled }}
+              mkdir -p /data/common/ephermy && cd /data/common/ephermy;
+              curl -L https://github.com/pk910/test-testnet-repo/releases/download/ephemery-{{ .Values.ephermy.iteration }}/testnet-all.tar.gz > testnet-all.tar.gz;
+              tar xzvf testnet-all.tar.gz;
+              cat nodevars_env.txt;
+              {{- end }}
+          volumeMounts:
+            - name: storage
+              mountPath: "/data"
+        # Geth init for ephermy testnet
+        {{- if .Values.ephermy.enabled }}
+        - name: geth-init
+          securityContext: 
+           {{- toYaml .Values.global.containerSecurityContext | nindent 12 }}
+          image: "{{ .Values.geth.image.repository }}:{{ .Values.geth.image.tag }}"
+          imagePullPolicy: {{ .Values.geth.image.pullPolicy }}
+          command:
+            - sh
+            - -ac
+            - >
+              exec geth init
+              --datadir=/data/geth
+              /data/common/ephermy/genesis.json
+          volumeMounts:
+            - name: storage
+              mountPath: "/data/geth"
+              subPath: geth
+            - name: storage
+              mountPath: "/data/common"
+              subPath: common
+         {{- end }}
+      containers:
+        # Geth container
+        - name: {{ .Values.geth.name }}
+          securityContext: 
+           {{- toYaml .Values.global.containerSecurityContext | nindent 12 }}
+          image: "{{ .Values.geth.image.repository }}:{{ .Values.geth.image.tag }}"
+          imagePullPolicy: {{ .Values.geth.image.pullPolicy }}
+          command:
+            - sh
+            - -ac
+            - >
+              . /data/common/publicip.env;
+              {{- if .Values.ephermy.enabled }}
+              . /data/common/ephermy/nodevars_env.txt;
+              {{- end }}
+              exec geth
+              {{- if not .Values.ephermy.enabled }}
+              --{{ .Values.global.network }}
+              {{- end }}
+              {{- if .Values.ephermy.enabled }}
+              --networkid=$CHAIN_ID
+              --bootnodes=$BOOTNODE_ENODE_LIST
+              {{- end }}
+              --nat=extip:$PUBLIC_IP
+              --port={{ .Values.geth.ports.p2p }}
+              --datadir=/data/geth
+              --metrics
+              --metrics.addr=0.0.0.0
+              --metrics.port="{{ .Values.geth.ports.metrics }}"
+              --authrpc.jwtsecret=/data/common/jwt.hex
+              --authrpc.port={{ .Values.global.engineRpcPort }}
+              --http.vhosts=*
+              --http
+              --http.addr=0.0.0.0
+              --http.port={{ .Values.geth.ports.httpJsonRpc }}
+          volumeMounts:
+            - name: storage
+              mountPath: "/data/geth"
+              subPath: geth
+            - name: storage
+              mountPath: "/data/common"
+              subPath: common
+              readOnly: true
+          ports:
+            - name: geth-p2p-tcp
+              containerPort: {{ .Values.geth.ports.p2p }}
+              protocol: TCP
+            - name: geth-p2p-udp
+              containerPort: {{ .Values.geth.ports.p2p }}
+              protocol: UDP
+            - name: geth-http-rpc
+              containerPort: {{ .Values.geth.ports.httpJsonRpc }}
+              protocol: TCP
+            - name: metrics
+              containerPort: {{ .Values.geth.ports.metrics }}
+          livenessProbe:
+            {{- toYaml .Values.geth.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.geth.readinessProbe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.geth.resources | nindent 12 }}
+        # Lighthouse container
+        - name: {{ .Values.lighthouse.name }}
+          securityContext: 
+           {{- toYaml .Values.global.containerSecurityContext | nindent 12 }}
+          image: "{{ .Values.lighthouse.image.repository }}:{{ .Values.lighthouse.image.tag }}"
+          imagePullPolicy: {{ .Values.lighthouse.image.pullPolicy }}
+          command:
+            - sh
+            - -ac
+            - >
+              . /data/common/publicip.env;
+              {{- if .Values.ephermy.enabled }}
+              . /data/common/ephermy/nodevars_env.txt;
+              {{- end }}
+              exec lighthouse
+              {{- if not .Values.ephermy.enabled }}
+              --network={{ .Values.global.network }}
+              {{- end }}
+              bn
+              {{- if .Values.ephermy.enabled }}
+              --boot-nodes=$BOOTNODE_ENR_LIST
+              --testnet-dir=/data/common/ephermy/
+              {{- end }}
+              --port={{ .Values.lighthouse.ports.p2p }}
+              --disable-upnp
+              --disable-enr-auto-update
+              --enr-address=$PUBLIC_IP
+              --enr-tcp-port={{ .Values.lighthouse.ports.p2p }}
+              --enr-udp-port={{ .Values.lighthouse.ports.p2p }}
+              --staking
+              --datadir=/data/lighthouse
+              --execution-endpoint=http://127.0.0.1:{{ .Values.global.engineRpcPort }}
+              --execution-jwt=/data/common/jwt.hex 
+              --http 
+              --http-address={{ .Values.lighthouse.httpRestInterface }}
+              --http-port={{ .Values.lighthouse.ports.httpRest }}
+              {{- if .Values.lighthouse.checkpointSync.enabled }}
+              --checkpoint-sync-url={{ .Values.lighthouse.checkpointSync.url }}
+              {{- end }}
+              --prune-payloads=false
+              --metrics
+              --metrics-allow-origin=*
+              --metrics-address=0.0.0.0
+              --metrics-port="{{ .Values.lighthouse.ports.metrics }}"
+              --validator-monitor-auto
+          volumeMounts:
+            - name: storage
+              mountPath: "/data/lighthouse"
+              subPath: lighthouse
+            - name: storage
+              mountPath: "/data/common"
+              subPath: common
+              readOnly: true
+          ports:
+            - name: lh-p2p-tcp
+              containerPort: {{ .Values.lighthouse.ports.p2p }}
+              protocol: TCP
+            - name: lh-p2p-udp
+              containerPort: {{ .Values.lighthouse.ports.p2p }}
+              protocol: UDP
+            - name: lh-http-rest
+              containerPort: {{ .Values.lighthouse.ports.httpRest }}
+              protocol: TCP
+            - name: metrics
+              containerPort: {{ .Values.lighthouse.ports.metrics }}
+          livenessProbe:
+            {{- toYaml .Values.lighthouse.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.lighthouse.readinessProbe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.lighthouse.resources | nindent 12 }}
+      nodeSelector:
+        {{- toYaml .Values.global.nodeSelector | nindent 8 }}
+      affinity:
+        {{- toYaml .Values.global.affinity | nindent 8 }}
+      tolerations:
+        {{- toYaml .Values.global.tolerations | nindent 8 }}
+      terminationGracePeriodSeconds: {{ .Values.global.terminationGracePeriodSeconds }}
+
+  volumeClaimTemplates:
+  - metadata:
+      name: storage
+    spec:
+      accessModes:
+        {{- toYaml .Values.global.persistence.accessModes | nindent 8 }}
+      storageClassName: {{ .Values.global.persistence.storageClassName }}
+      resources:
+        requests:
+          storage: {{ .Values.global.persistence.size }}
+
+

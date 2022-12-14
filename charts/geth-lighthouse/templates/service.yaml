@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "geth-lighthouse.fullname" . }}
+  labels:
+    {{- include "geth-lighthouse.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  # Note Engine API port is NOT exposed. After the Merge Execution Client and Consenus Client have strict 1:1 mapping
+  ports:
+    - port: {{ .Values.geth.ports.httpJsonRpc }}
+      targetPort: {{ .Values.geth.ports.httpJsonRpc }}
+      protocol: TCP
+      name: geth-http-rpc
+    - port: {{ .Values.geth.ports.metrics }}
+      targetPort: {{ .Values.geth.ports.metrics }}
+      protocol: TCP
+      name: geth-metrics
+    - port: {{ .Values.lighthouse.ports.httpRest }}
+      targetPort: {{ .Values.lighthouse.ports.httpRest }}
+      protocol: TCP
+      name: lh-http-rest
+    - port: {{ .Values.lighthouse.ports.metrics }}
+      targetPort: {{ .Values.lighthouse.ports.metrics }}
+      protocol: TCP
+      name: lh-metrics
+  selector:
+    {{- include "geth-lighthouse.selectorLabels" . | nindent 4 }}

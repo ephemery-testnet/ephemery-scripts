@@ -1,0 +1,25 @@
+apiVersion: v2
+name: geth-lighthouse
+description: Helm chart that spins up a post-merge ethereum node consisting of the go-ethereum (geth) execution client and the lighthouse consensus client.
+
+# A chart can be either an 'application' or a 'library' chart.
+#
+# Application charts are a collection of templates that can be packaged into versioned archives
+# to be deployed.
+#
+# Library charts provide useful utilities or functions for the chart developer. They're included as
+# a dependency of application charts to inject those utilities and functions into the rendering
+# pipeline. Library charts do not define any templates and therefore cannot be deployed.
+icon: https://launchpad.ethereum.org/static/media/gethereum-mascot-circle.75cbd3a5.png
+sources:
+  - https://github.com/ethereum/go-ethereum
+  - https://github.com/sigp/lighthouse
+type: application
+# This is the chart version. This version number should be incremented each time you make changes
+# to the chart and its templates, including the app version.
+# Versions are expected to follow Semantic Versioning (https://semver.org/)
+version: 0.1.0
+
+maintainers:
+  - name: laibe
+    url: https://github.com/laibe
