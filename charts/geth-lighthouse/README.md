@@ -23,9 +23,9 @@ P2P traffic. When deploying multiple nodes, set the p2p ports accordingly and en
 helm install geth-lighthouse-node-1 charts/geth-lighthouse --set geth.ports.p2p=30304 --set lighthouse.ports.p2p=30104
 ```
 
-## Ephermy
+## ephemery
 
-The ephemeral testnet can be enabled with the following flags: `--set ephermy.enabled=true --set ephermy.iteration=32`.
+The ephemeral testnet can be enabled with the following flags: `--set ephemery.enabled=true --set ephemery.iteration=32`.
 The current iteration is shown on the [project website](https://ephemery.pk910.de/).
 
 NOTE: Since the ephemeral testnet is small, the requested storage size can be reduced: `--set global.persistence.size=10Gi`
@@ -40,8 +40,8 @@ The testnet rolls back to genesis every two days. Currently a clean way to do th
 | InitContainer.image.repository | string | `"archlinux"` | Container image repository. Archlinux contains curl and openssl. |
 | InitContainer.image.tag | string | `"base-20221211.0.109768"` | Image tag |
 | InitContainer.name | string | `"init-container"` | Init container to set the correct permissions to access data directories.  |
-| ephermy.enabled | bool | `false` | Run geth-lighthouse in the [ephermy testnet](https://github.com/pk910/test-testnet-repo) |
-| ephermy.iteration | int | `32` | Specify the current ephermy release |
+| ephemery.enabled | bool | `false` | Run geth-lighthouse in the [ephemery testnet](https://github.com/pk910/test-testnet-repo) |
+| ephemery.iteration | int | `32` | Specify the current ephemery release |
 | fullnameOverride | string | `""` | Overrides the chart's computed fullname |
 | geth.image.pullPolicy | string | `"IfNotPresent"` | Container pull policy |
 | geth.image.repository | string | `"ethereum/client-go"` | Container image repository |

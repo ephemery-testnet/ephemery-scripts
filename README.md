@@ -38,7 +38,7 @@ To deploy a geth-lighthouse node via helm use the [chart](./charts/geth-lighthou
 1. Uninstall the chart: `helm uninstall geth-lighthouse-node` 
 2. Identify the PersistentVolumeClaim used by the chart: `kubectl get pvc`
 3. Delete the pvc, e.g. `kubectl delete pvc geth-lighthouse-node-0`.
-4. Install the chart with the latest iteration by setting the value `--set ephermy.iteration=<latest-iteration>`: 
+4. Install the chart with the latest iteration by setting the value `--set ephemery.iteration=<latest-iteration>`: 
 
 
 ## Manual deployment

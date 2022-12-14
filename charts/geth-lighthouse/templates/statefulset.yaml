@@ -42,7 +42,7 @@ spec:
                 fieldRef:
                   fieldPath: spec.nodeName
           # Chown data directory, generate jwt for execution client <-> consensus client communication and get external ip for p2p
-          # Optionally load latest ephermy config
+          # Optionally load latest ephemery config
           command: 
             - bash
             - -c
@@ -52,17 +52,17 @@ spec:
               openssl rand -hex 32 > /data/common/jwt.hex;
               echo -n PUBLIC_IP=$(curl http://icanhazip.com) > /data/common/publicip.env;
               cat /data/common/publicip.env;
-              {{- if .Values.ephermy.enabled }}
-              mkdir -p /data/common/ephermy && cd /data/common/ephermy;
-              curl -L https://github.com/pk910/test-testnet-repo/releases/download/ephemery-{{ .Values.ephermy.iteration }}/testnet-all.tar.gz > testnet-all.tar.gz;
+              {{- if .Values.ephemery.enabled }}
+              mkdir -p /data/common/ephemery && cd /data/common/ephemery;
+              curl -L https://github.com/pk910/test-testnet-repo/releases/download/ephemery-{{ .Values.ephemery.iteration }}/testnet-all.tar.gz > testnet-all.tar.gz;
               tar xzvf testnet-all.tar.gz;
               cat nodevars_env.txt;
               {{- end }}
           volumeMounts:
             - name: storage
               mountPath: "/data"
-        # Geth init for ephermy testnet
-        {{- if .Values.ephermy.enabled }}
+        # Geth init for ephemery testnet
+        {{- if .Values.ephemery.enabled }}
         - name: geth-init
           securityContext: 
            {{- toYaml .Values.global.containerSecurityContext | nindent 12 }}
@@ -74,7 +74,7 @@ spec:
             - >
               exec geth init
               --datadir=/data/geth
-              /data/common/ephermy/genesis.json
+              /data/common/ephemery/genesis.json
           volumeMounts:
             - name: storage
               mountPath: "/data/geth"
@@ -95,16 +95,17 @@ spec:
             - -ac
             - >
               . /data/common/publicip.env;
-              {{- if .Values.ephermy.enabled }}
-              . /data/common/ephermy/nodevars_env.txt;
+              {{- if .Values.ephemery.enabled }}
+              . /data/common/ephemery/nodevars_env.txt;
               {{- end }}
               exec geth
-              {{- if not .Values.ephermy.enabled }}
+              {{- if not .Values.ephemery.enabled }}
               --{{ .Values.global.network }}
               {{- end }}
-              {{- if .Values.ephermy.enabled }}
+              {{- if .Values.ephemery.enabled }}
               --networkid=$CHAIN_ID
               --bootnodes=$BOOTNODE_ENODE_LIST
+              --syncmode=full
               {{- end }}
               --nat=extip:$PUBLIC_IP
               --port={{ .Values.geth.ports.p2p }}
@@ -155,17 +156,17 @@ spec:
             - -ac
             - >
               . /data/common/publicip.env;
-              {{- if .Values.ephermy.enabled }}
-              . /data/common/ephermy/nodevars_env.txt;
+              {{- if .Values.ephemery.enabled }}
+              . /data/common/ephemery/nodevars_env.txt;
               {{- end }}
               exec lighthouse
-              {{- if not .Values.ephermy.enabled }}
+              {{- if not .Values.ephemery.enabled }}
               --network={{ .Values.global.network }}
               {{- end }}
               bn
-              {{- if .Values.ephermy.enabled }}
+              {{- if .Values.ephemery.enabled }}
               --boot-nodes=$BOOTNODE_ENR_LIST
-              --testnet-dir=/data/common/ephermy/
+              --testnet-dir=/data/common/ephemery/
               {{- end }}
               --port={{ .Values.lighthouse.ports.p2p }}
               --disable-upnp

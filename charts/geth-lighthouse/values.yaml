@@ -79,10 +79,10 @@ InitContainer:
     # -- Image tag
     tag: "base-20221211.0.109768"
 
-ephermy:
-  # -- Run geth-lighthouse in the [ephermy testnet](https://github.com/pk910/test-testnet-repo)
+ephemery:
+  # -- Run geth-lighthouse in the [ephemery testnet](https://github.com/pk910/test-testnet-repo)
   enabled: false
-  # -- Specify the current ephermy release
+  # -- Specify the current ephemery release
   iteration: 32
 
 # Geth values
