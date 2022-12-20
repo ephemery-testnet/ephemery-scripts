@@ -1,0 +1,29 @@
+{{- if .Values.ephemery.enabled }}
+# ephemery resetter cron job that restarts the pod every two days
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "geth-lighthouse.fullname" . }}
+spec:
+  schedule: "0 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: {{ include "geth-lighthouse.serviceAccountName" . }}
+          restartPolicy: Never
+          containers:
+          - name:  resetter
+            image: "{{ .Values.ephemery.image.repository }}:{{ .Values.ephemery.image.tag }}"
+            imagePullPolicy: {{ .Values.ephemery.image.pullPolicy }}
+            command:
+            - bash
+            - -c
+            - >
+              ITERATION_NUMBER=$(curl -s https://api.github.com/repos/{{ .Values.ephemery.repository }}/releases/latest | jq -r '.tag_name' | awk -F- '{print $2}');
+              CURRENT_ITERATION=$(kubectl get sts {{ include "geth-lighthouse.fullname" .}} -o json| jq '.metadata.annotations.iteration | tonumber');
+              echo "current iteration: $CURRENT_ITERATION";
+              echo "latest iteration: $ITERATION_NUMBER";
+              if [ $ITERATION_NUMBER -gt $CURRENT_ITERATION ]; then kubectl rollout restart sts/{{ include "geth-lighthouse.fullname" . }}; fi;
+          restartPolicy: OnFailure
+{{- end }}

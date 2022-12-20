@@ -1,14 +1,16 @@
+{{- if .Values.ephemery.enabled }}
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
+kind: RoleBinding
 metadata:
   name: {{ include "geth-lighthouse.serviceAccountName" . }}
   labels:
     {{- include "geth-lighthouse.labels" . | nindent 4 }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
+  kind: Role
   name: {{ include "geth-lighthouse.serviceAccountName" . }}
 subjects:
   - kind: ServiceAccount
     name: {{ include "geth-lighthouse.serviceAccountName" . }}
     namespace: {{ .Release.Namespace }}
+{{- end }}

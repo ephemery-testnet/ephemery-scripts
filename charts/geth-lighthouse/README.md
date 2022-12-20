@@ -25,12 +25,12 @@ helm install geth-lighthouse-node-1 charts/geth-lighthouse --set geth.ports.p2p=
 
 ## ephemery
 
-The ephemeral testnet can be enabled with the following flags: `--set ephemery.enabled=true --set ephemery.iteration=32`.
+The ephemeral testnet can be enabled with the following flag: `--set ephemery.enabled=true`.
 The current iteration is shown on the [project website](https://ephemery.pk910.de/).
 
 NOTE: Since the ephemeral testnet is small, the requested storage size can be reduced: `--set global.persistence.size=10Gi`
 
-The testnet rolls back to genesis every two days. Currently a clean way to do that is via `helm uninstall` and `kubectl delete pvc`.
+The testnet rolls back to genesis every two days. Rollback is automated via a CronJob that checks every hour if there is a new release.
 
 ## Values
 

@@ -42,7 +42,6 @@ spec:
                 fieldRef:
                   fieldPath: spec.nodeName
           # Chown data directory, generate jwt for execution client <-> consensus client communication and get external ip for p2p
-          # Optionally load latest ephemery config
           command: 
             - bash
             - -c
@@ -50,19 +49,35 @@ spec:
               chown -R 1001:1001 /data;
               mkdir -p /data/common;
               openssl rand -hex 32 > /data/common/jwt.hex;
-              echo -n PUBLIC_IP=$(curl http://icanhazip.com) > /data/common/publicip.env;
+              echo -n PUBLIC_IP=$(curl -s http://icanhazip.com) > /data/common/publicip.env;
               cat /data/common/publicip.env;
-              {{- if .Values.ephemery.enabled }}
-              mkdir -p /data/common/ephemery && cd /data/common/ephemery;
-              curl -L https://github.com/pk910/test-testnet-repo/releases/download/ephemery-{{ .Values.ephemery.iteration }}/testnet-all.tar.gz > testnet-all.tar.gz;
-              tar xzvf testnet-all.tar.gz;
-              cat nodevars_env.txt;
-              {{- end }}
           volumeMounts:
             - name: storage
               mountPath: "/data"
-        # Geth init for ephemery testnet
+        # Ephemery testnet specific init containers
         {{- if .Values.ephemery.enabled }}
+        - name: {{ .Values.ephemery.name }}
+          image: "{{ .Values.ephemery.image.repository }}:{{ .Values.ephemery.image.tag }}"
+          securityContext:
+            runAsNonRoot: false
+            runAsUser: 0
+          imagePullPolicy: {{ .Values.ephemery.image.pullPolicy }}
+          command:
+            - sh
+            - -ac
+            - >
+              chown -R 1001:1001 /data;
+              rm -rf /data/commmon/ephemery;
+              mkdir -p /data/common/ephemery && cd /data/common/ephemery;
+              RELEASE=$(curl -s https://api.github.com/repos/{{ .Values.ephemery.repository }}/releases/latest | jq -r '.tag_name');
+              ITERATION=$(echo $RELEASE|awk -F- '{print $2}');
+              kubectl annotate --overwrite sts {{ include "geth-lighthouse.fullname" . }} iteration=$ITERATION;
+              curl -s -L https://github.com/{{ .Values.ephemery.repository }}/releases/download/$RELEASE/testnet-all.tar.gz > testnet-all.tar.gz;
+              tar xzvf testnet-all.tar.gz;
+              cat config.yaml
+          volumeMounts:
+            - name: storage
+              mountPath: "/data"
         - name: geth-init
           securityContext: 
            {{- toYaml .Values.global.containerSecurityContext | nindent 12 }}
@@ -72,6 +87,7 @@ spec:
             - sh
             - -ac
             - >
+              rm -rf /data/geth/*;
               exec geth init
               --datadir=/data/geth
               /data/common/ephemery/genesis.json
@@ -106,6 +122,7 @@ spec:
               --networkid=$CHAIN_ID
               --bootnodes=$BOOTNODE_ENODE_LIST
               --syncmode=full
+              --snapshot=false
               {{- end }}
               --nat=extip:$PUBLIC_IP
               --port={{ .Values.geth.ports.p2p }}
@@ -158,6 +175,7 @@ spec:
               . /data/common/publicip.env;
               {{- if .Values.ephemery.enabled }}
               . /data/common/ephemery/nodevars_env.txt;
+              rm -r /data/lighthouse/beacon;
               {{- end }}
               exec lighthouse
               {{- if not .Values.ephemery.enabled }}
@@ -234,5 +252,3 @@ spec:
       resources:
         requests:
           storage: {{ .Values.global.persistence.size }}
-
-

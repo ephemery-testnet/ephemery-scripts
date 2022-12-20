@@ -56,16 +56,6 @@ global:
   # ServiceMonitor
   serviceMonitor:
     create: false
-  rbac:
-     clusterRules:
-        # Required to obtain the nodes external IP
-       - apiGroups: [""]
-         resources:
-         - "nodes"
-         verbs:
-         - "get"
-         - "list"
-         - "watch"
 
 # Init Container values
 InitContainer:
@@ -82,8 +72,17 @@ InitContainer:
 ephemery:
   # -- Run geth-lighthouse in the [ephemery testnet](https://github.com/pk910/test-testnet-repo)
   enabled: false
-  # -- Specify the current ephemery release
-  iteration: 32
+  # -- Name of the ephemery container
+  name: ephemery-init
+  # -- Specify ephemery github repository
+  repository: pk910/test-testnet-repo
+  image:
+    # -- Nixery.dev image
+    repository: "nixery.dev/shell/gnutar/gzip/curl/jq/kubectl/gawk"
+    # -- Container pull policy
+    pullPolicy: "IfNotPresent"
+    # -- Image tag
+    tag: latest
 
 # Geth values
 geth:
@@ -175,4 +174,3 @@ lighthouse:
     path: /metrics
     interval: 30s
     scrapeTimeout: 10s
-
