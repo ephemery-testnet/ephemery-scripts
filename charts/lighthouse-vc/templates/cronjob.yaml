@@ -1,16 +1,16 @@
 {{- if eq .Values.global.network "ephemery" }}
-# Ephemery resetter cron job that restarts the pod if there is a new ephemery itieration by querrying the GitHub API
+# ephemery resetter cron job that restarts the pod every two days
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: {{ include "geth-lighthouse.fullname" . }}
+  name: {{ include "lighthouse-vc.fullname" . }}
 spec:
   schedule: "0 * * * *"
   jobTemplate:
     spec:
       template:
         spec:
-          serviceAccountName: {{ include "geth-lighthouse.serviceAccountName" . }}
+          serviceAccountName: {{ include "lighthouse-vc.serviceAccountName" . }}
           restartPolicy: Never
           containers:
           - name:  resetter
@@ -21,9 +21,9 @@ spec:
             - -c
             - >
               ITERATION_NUMBER=$(curl -s https://api.github.com/repos/{{ .Values.ephemery.repository }}/releases/latest | jq -r '.tag_name' | awk -F- '{print $2}');
-              CURRENT_ITERATION=$(kubectl get sts {{ include "geth-lighthouse.fullname" .}} -o json| jq '.metadata.annotations.iteration | tonumber');
+              CURRENT_ITERATION=$(kubectl get sts {{ include "lighthouse-vc.fullname" .}} -o json| jq '.metadata.annotations.iteration | tonumber');
               echo "current iteration: $CURRENT_ITERATION";
               echo "latest iteration: $ITERATION_NUMBER";
-              if [ $ITERATION_NUMBER -gt $CURRENT_ITERATION ]; then kubectl rollout restart sts/{{ include "geth-lighthouse.fullname" . }}; fi;
+              if [ $ITERATION_NUMBER -gt $CURRENT_ITERATION ]; then kubectl rollout restart sts/{{ include "lighthouse-vc.fullname" . }}; fi;
           restartPolicy: OnFailure
 {{- end }}

@@ -1,0 +1,127 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "lighthouse-vc.fullname" . }}
+  labels:
+    {{- include "lighthouse-vc.labels" . | nindent 4 }}
+  annotations:
+    {{- toYaml .Values.global.statefulSetAnnotations | nindent 4 }}
+spec:
+  replicas: {{ .Values.global.replicas }}
+  selector:
+    matchLabels:
+      {{- include "lighthouse-vc.selectorLabels" . | nindent 6 }}
+  serviceName: {{ include "lighthouse-vc.fullname" . }}-headless
+  updateStrategy:
+    {{- toYaml .Values.global.updateStrategy | nindent 4 }}
+  template:
+    metadata:
+      labels:
+        {{- include "lighthouse-vc.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "lighthouse-vc.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.global.securityContext | nindent 8 }}
+      initContainers:
+        {{- if eq .Values.global.network "ephemery" }}
+        # ephemery init container
+        - name: ephemery-init
+          image: "{{ .Values.ephemery.image.repository }}:{{ .Values.ephemery.image.tag }}"
+          securityContext:
+            runAsNonRoot: false
+            runAsUser: 0
+          imagePullPolicy: {{ .Values.ephemery.image.pullPolicy }}
+          command:
+            - sh
+            - -ac
+            - >
+              chown -R 1001:1001 /data;
+              rm -rf /data/ephemery;
+              mkdir -p /data/ephemery && cd /data/ephemery;
+              RELEASE=$(curl -s https://api.github.com/repos/{{ .Values.ephemery.repository }}/releases/latest | jq -r '.tag_name');
+              ITERATION=$(echo $RELEASE|awk -F- '{print $2}');
+              kubectl annotate --overwrite sts {{ include "lighthouse-vc.fullname" . }} iteration=$ITERATION;
+              curl -s -L https://github.com/{{ .Values.ephemery.repository }}/releases/download/$RELEASE/testnet-all.tar.gz > testnet-all.tar.gz;
+              tar xzvf testnet-all.tar.gz;
+              cat config.yaml;
+              rm -f /data/slashing_protection.sqlite;
+              rm -f /data/slashing_protection.sqlite-journal;
+          volumeMounts:
+            - name: storage
+              mountPath: "/data"
+         {{- end }}
+      containers:
+        # Lighthouse validator client container
+        - name: {{ .Values.lighthouse.name }}
+          securityContext: 
+           {{- toYaml .Values.global.containerSecurityContext | nindent 12 }}
+          image: "{{ .Values.lighthouse.image.repository }}:{{ .Values.lighthouse.image.tag }}"
+          imagePullPolicy: {{ .Values.lighthouse.image.pullPolicy }}
+          command:
+            - sh
+            - -ac
+            - >
+              exec lighthouse
+              {{- if eq .Values.global.network "ephemery" }}
+              --testnet-dir=/data/ephemery/
+              {{- else }}
+              --network={{ .Values.global.network }}
+              {{- end }}
+              vc
+              --beacon-nodes {{ join "," .Values.global.beaconNodes }} 
+              --validators-dir=/data
+              --secrets-dir=/data
+              --http 
+              --http-address={{ .Values.lighthouse.httpInterface }}
+              --http-port={{ .Values.lighthouse.ports.httpJson }}
+              --unencrypted-http-transport
+              --http-allow-origin=*
+              --metrics
+              --metrics-allow-origin=*
+              --metrics-address=0.0.0.0
+              --metrics-port="{{ .Values.lighthouse.ports.metrics }}"
+          volumeMounts:
+            - name: storage
+              mountPath: "/data"
+            {{- if eq .Values.global.network "ephemery" }}
+            - name: storage
+              mountPath: "/data/ephemery"
+              subPath: ephemery
+              readOnly: true
+            {{- end }}
+          ports:
+            - name: lh-vc-http
+              containerPort: {{ .Values.lighthouse.ports.httpJson }}
+              protocol: TCP
+            - name: metrics
+              containerPort: {{ .Values.lighthouse.ports.metrics }}
+          livenessProbe:
+            {{- toYaml .Values.lighthouse.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.lighthouse.readinessProbe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.lighthouse.resources | nindent 12 }}
+      nodeSelector:
+        {{- toYaml .Values.global.nodeSelector | nindent 8 }}
+      affinity:
+        {{- toYaml .Values.global.affinity | nindent 8 }}
+      tolerations:
+        {{- toYaml .Values.global.tolerations | nindent 8 }}
+      terminationGracePeriodSeconds: {{ .Values.global.terminationGracePeriodSeconds }}
+
+  volumeClaimTemplates:
+  - metadata:
+      name: storage
+    spec:
+      accessModes:
+        {{- toYaml .Values.global.persistence.accessModes | nindent 8 }}
+      storageClassName: {{ .Values.global.persistence.storageClassName }}
+      resources:
+        requests:
+          storage: {{ .Values.global.persistence.size }}
+
+

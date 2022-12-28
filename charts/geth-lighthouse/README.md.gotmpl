@@ -25,7 +25,7 @@ helm install geth-lighthouse-node-1 charts/geth-lighthouse --set geth.ports.p2p=
 
 ## ephemery 
 
-The ephemeral testnet can be enabled with the following flag: `--set ephemery.enabled=true`.
+The ephemeral testnet can be enabled with the following flag: `--set global.network=ephemery`.
 The current iteration is shown on the [project website](https://ephemery.pk910.de/). 
 
 NOTE: Since the ephemeral testnet is small, the requested storage size can be reduced: `--set global.persistence.size=10Gi`

@@ -5,7 +5,6 @@ metadata:
   labels:
     {{- include "geth-lighthouse.labels" $ | nindent 4 }}
     pod: {{ include "geth-lighthouse.fullname" $ }}-0
-    type: p2p
 spec:
   type: NodePort
   externalTrafficPolicy: Local

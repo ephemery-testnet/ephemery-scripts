@@ -9,7 +9,7 @@ nameOverride: ""
 fullnameOverride: ""
 
 global:
-  # -- Ethereum default network
+  # -- Ethereum default network. Example: mainnet, goerli, ephemery
   network: mainnet
   # -- Engine API JSON-RPC Port, see also the official [Engine Specification](https://github.com/ethereum/execution-apis/blob/main/src/engine/specification.md)
   engineRpcPort: 8551
@@ -29,7 +29,6 @@ global:
     # readOnlyRootFilesystem: true
     # runAsNonRoot: true
     # runAsUser: 1000
-  statefulSetAnnotations: {}
   updateStrategy:
     # -- Update stategy type
     type: RollingUpdate
@@ -68,10 +67,9 @@ InitContainer:
     pullPolicy: "IfNotPresent"
     # -- Image tag
     tag: "base-20221211.0.109768"
-
+    
+# If global.network=ephemery, run the [ephemery testnet](https://github.com/pk910/test-testnet-repo)
 ephemery:
-  # -- Run geth-lighthouse in the [ephemery testnet](https://github.com/pk910/test-testnet-repo)
-  enabled: false
   # -- Name of the ephemery container
   name: ephemery-init
   # -- Specify ephemery github repository

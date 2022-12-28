@@ -1,6 +1,6 @@
 apiVersion: v2
-name: geth-lighthouse
-description: Helm chart that spins up a post-merge ethereum node consisting of the go-ethereum (geth) execution client and the lighthouse consensus client.
+name: lighthouse-vc
+description: Installs lighthouse in validator client mode.
 
 # A chart can be either an 'application' or a 'library' chart.
 #
@@ -18,7 +18,7 @@ type: application
 # This is the chart version. This version number should be incremented each time you make changes
 # to the chart and its templates, including the app version.
 # Versions are expected to follow Semantic Versioning (https://semver.org/)
-version: 0.1.1
+version: 0.1.0
 
 maintainers:
   - name: laibe

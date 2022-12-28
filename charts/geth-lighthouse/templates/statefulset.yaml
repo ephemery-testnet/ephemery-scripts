@@ -10,6 +10,7 @@ spec:
   selector:
     matchLabels:
       {{- include "geth-lighthouse.selectorLabels" . | nindent 6 }}
+  serviceName: {{ include "geth-lighthouse.fullname" . }}-headless
   updateStrategy:
     {{- toYaml .Values.global.updateStrategy | nindent 4 }}
   template:
@@ -55,7 +56,7 @@ spec:
             - name: storage
               mountPath: "/data"
         # Ephemery testnet specific init containers
-        {{- if .Values.ephemery.enabled }}
+        {{- if eq .Values.global.network "ephemery" }}
         - name: {{ .Values.ephemery.name }}
           image: "{{ .Values.ephemery.image.repository }}:{{ .Values.ephemery.image.tag }}"
           securityContext:
@@ -111,14 +112,14 @@ spec:
             - -ac
             - >
               . /data/common/publicip.env;
-              {{- if .Values.ephemery.enabled }}
+              {{- if eq .Values.global.network "ephemery" }}
               . /data/common/ephemery/nodevars_env.txt;
               {{- end }}
               exec geth
-              {{- if not .Values.ephemery.enabled }}
+              {{- if ne .Values.global.network "ephemery" }}
               --{{ .Values.global.network }}
               {{- end }}
-              {{- if .Values.ephemery.enabled }}
+              {{- if eq .Values.global.network "ephemery" }}
               --networkid=$CHAIN_ID
               --bootnodes=$BOOTNODE_ENODE_LIST
               --syncmode=full
@@ -173,16 +174,16 @@ spec:
             - -ac
             - >
               . /data/common/publicip.env;
-              {{- if .Values.ephemery.enabled }}
+              {{- if eq .Values.global.network "ephemery" }}
               . /data/common/ephemery/nodevars_env.txt;
               rm -r /data/lighthouse/beacon;
               {{- end }}
               exec lighthouse
-              {{- if not .Values.ephemery.enabled }}
+               {{- if ne .Values.global.network "ephemery" }}
               --network={{ .Values.global.network }}
               {{- end }}
               bn
-              {{- if .Values.ephemery.enabled }}
+              {{- if eq .Values.global.network "ephemery" }}
               --boot-nodes=$BOOTNODE_ENR_LIST
               --testnet-dir=/data/common/ephemery/
               {{- end }}

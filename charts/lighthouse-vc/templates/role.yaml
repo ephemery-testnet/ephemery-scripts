@@ -2,13 +2,13 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: {{ include "geth-lighthouse.serviceAccountName" . }}
+  name: {{ include "lighthouse-vc.serviceAccountName" . }}-ephemery
   labels:
-    {{- include "geth-lighthouse.labels" . | nindent 4 }}
+    {{- include "lighthouse-vc.labels" . | nindent 4 }}
 rules:
     - apiGroups: ["apps", "extensions"]
       resources: ["statefulsets"]
       resourceNames: 
-      - "{{ include "geth-lighthouse.fullname" . }}"
+      - "{{ include "lighthouse-vc.fullname" . }}"
       verbs: ["get", "patch", "list", "watch"]
 {{- end }}
