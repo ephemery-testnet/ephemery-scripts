@@ -67,16 +67,18 @@ setup_erigon() {
   echo "erigon release: ${erigon_release}"
   if [ ! -z "$erigon_release" ] && [ ! -d "$erigon_release" ]; then
     erigon_version=$(echo $erigon_release | sed 's/^v//')
-    wget "https://github.com/ledgerwatch/erigon/releases/download/$erigon_release/erigon_${erigon_version}_linux_amd64.tar.gz"
+    wget "https://github.com/ledgerwatch/erigon/archive/refs/tags/${erigon_release}.tar.gz"
 
     mkdir $erigon_release
     cd $erigon_release
+    tar xfz ../${erigon_release}.tar.gz
+    cd erigon-*
     erigon_path=$(pwd)
 
-    tar xfz ../erigon_${erigon_version}_linux_amd64.tar.gz
+    make erigon
 
     rm ~/erigon
-    ln -s $erigon_path ~/erigon
+    ln -s $erigon_path/build ~/erigon
     cd ..
   fi
   cd ..
