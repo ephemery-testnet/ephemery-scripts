@@ -126,7 +126,7 @@ write_files:
 
       setup_golang
       setup_rust
-      setup_erigon git
+      setup_geth git
       setup_lighthouse git capella
 
   - path: /home/etherum/retention.sh
