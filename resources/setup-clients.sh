@@ -60,18 +60,19 @@ setup_golang() {
 
     mkdir $setup_version
     cd $setup_version
-    link_path="$(pwd)"
+    link_path="$(pwd)/go"
 
     tar xfz ../go${setup_version}.linux-amd64.tar.gz
   else
-    link_path="$(pwd)/$setup_version"
+    link_path="$(pwd)/$setup_version/go"
   fi
 
 
   if [ ! -z "$src_link_path" ] && [ ! -z "$link_path" ] && [ -d "$link_path" ]; then
     rm "$src_link_path/golang" 2> /dev/null
     ln -s "$link_path" "$src_link_path/golang"
-    export PATH=$src_link_path/golang/bin:~/go/bin:$PATH
+    export PATH=$src_link_path/golang/bin:$HOME/go/bin:$PATH
+    echo $PATH
   fi
 
   cd $base_dir

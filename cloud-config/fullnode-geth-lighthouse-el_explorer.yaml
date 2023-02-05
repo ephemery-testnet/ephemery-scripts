@@ -120,7 +120,7 @@ write_files:
         wget https://raw.githubusercontent.com/pk910/test-testnet-scripts/master/resources/setup-clients.sh
       fi
       source ./setup-clients.sh
-      export PATH=~/golang/bin:~/go/bin:$PATH
+      src_link_path="$(pwd)"
       mkdir -p src
       cd src
 
