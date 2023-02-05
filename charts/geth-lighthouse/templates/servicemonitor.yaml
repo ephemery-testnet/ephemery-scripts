@@ -1,0 +1,33 @@
+{{- if .Values.global.serviceMonitor.create -}}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "geth-lighthouse.serviceAccountName" . }}
+  labels:
+    {{- include "geth-lighthouse.labels" . | nindent 4 }}
+spec:
+  endpoints:
+  # geth
+  - interval: {{ .Values.geth.serviceMonitor.interval }}
+    {{- if .Values.geth.serviceMonitor.scrapeTimeout }}
+    scrapeTimeout: {{ .Values.geth.serviceMonitor.scrapeTimeout }}
+    {{- end }}
+    honorLabels: true
+    port: geth-metrics
+    path: {{ .Values.geth.serviceMonitor.path }}
+  # lighthouse
+  - interval: {{ .Values.lighthouse.serviceMonitor.interval }}
+    {{- if .Values.lighthouse.serviceMonitor.scrapeTimeout }}
+    scrapeTimeout: {{ .Values.lighthouse.serviceMonitor.scrapeTimeout }}
+    {{- end }}
+    honorLabels: true
+    port: lh-metrics
+    path: {{ .Values.lighthouse.serviceMonitor.path }}
+  jobLabel: "{{ .Release.Name }}"
+  selector:
+    matchLabels:
+      {{- include "geth-lighthouse.selectorLabels" . | nindent 8 }}
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace }}
+{{- end }}

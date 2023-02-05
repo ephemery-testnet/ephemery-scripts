@@ -1,0 +1,34 @@
+{{ template "chart.header" . }}
+{{ template "chart.badgesSection" . }}
+
+{{ template "chart.description" . }}
+
+{{ template "chart.homepageLine" . }}
+
+{{ template "chart.deprecationWarning" . }}
+{{ template "chart.sourcesSection" . }}
+{{ template "chart.requirementsSection" . }}
+
+
+## Quick Start
+
+```shell
+# install from local copy
+helm install lighthouse-vc charts/lighthouse-vc
+```
+
+To access the beacon API, the api bearer token needs to be retrieved. By default the pod stores it under `/data/api-token.txt`, e.g. :
+
+```bash
+kubectl exec lighthouse-vc-0 -- cat /data/api-token.txt
+```
+
+Port forward for local development:
+
+```bash
+kubectl port-forward svc/lighthouse-vc 5062:5062
+# check version
+curl localhost:5062/lighthouse/version -H "Authorization: Bearer <enter-bearer-token-here>"
+```
+
+{{ template "chart.valuesSection" . }}
