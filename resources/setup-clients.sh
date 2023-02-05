@@ -6,8 +6,45 @@ get_github_release() {
     sed -E 's/.*"([^"]+)".*/\1/'                                    # Pluck JSON value
 }
 
+src_link_path=""
+src_need_build="no"
+
+src_reset_git() {
+  local git_path="$1"
+  local git_repo="$2"
+  local git_branch="$3"
+  src_need_build="no"
+
+  if [ -d "$git_path" ] && [ "$(git -C $git_path config --get remote.origin.url)" != "$git_repo" ]; then
+    # repository change - drop & clone again
+    rm -rf $git_path
+  fi
+  if [ -d "$git_path" ]; then
+    # fetch all from origin
+    git -C $git_path fetch --all
+    if [ "$(git -C $git_path branch --show-current)" != "$git_branch" ]; then
+      # switch branch
+      git -C $git_path checkout $git_branch
+      src_need_build="yes"
+    fi
+    if [ "$(git -C git rev-list HEAD | head -n 1)" != "$(git -C git rev-list origin/$git_branch | head -n 1)" ]; then
+      # reset to origin head
+      git -C $git_path reset --hard "origin/$git_branch"
+      src_need_build="yes"
+    fi
+  fi
+  if [ ! -d "./git" ]; then
+    # clone repository
+    git clone -b $git_branch $git_repo $git_path
+    src_need_build="yes"
+  fi
+}
+
+
+# setup functions
+
 setup_golang() {
-  # update golang
+  # install golang
   mkdir -p golang
   cd golang
   golang_release=$(wget -qO- https://golang.org/dl/ | grep -oP '\/go([0-9\.]+)\.linux-amd64\.tar\.gz' | head -n 1 | grep -oP 'go[0-9\.]+' | grep -oP '[0-9\.]+' | head -c -2 )
@@ -26,6 +63,14 @@ setup_golang() {
     cd ..
   fi
   cd ..
+  export PATH=~/golang/bin:~/go/bin:$PATH
+}
+
+setup_rust() {
+  # install rust
+  curl https://sh.rustup.rs -sSf | sh -s -- -y
+  source "$HOME/.cargo/env"
+  rustup update
 }
 
 setup_eth2valtools() {
@@ -35,121 +80,198 @@ setup_eth2valtools() {
 
 setup_geth() {
   # update geth
+  local base_dir=$(pwd)
   mkdir -p geth
   cd geth
-  geth_release=$(get_github_release ethereum/go-ethereum)
-  echo "geth release: ${geth_release}"
-  if [ ! -z "$geth_release" ] && [ ! -d "$geth_release" ]; then
-    wget "https://github.com/ethereum/go-ethereum/archive/refs/tags/${geth_release}.tar.gz"
 
-    mkdir $geth_release
-    cd $geth_release
-    tar xfz ../${geth_release}.tar.gz
+  setup_version="${1:-latest}"
+  if [ "$setup_version" = "latest" ]; then
+    setup_version=$(get_github_release ethereum/go-ethereum)
+  fi
+
+  src_need_build="no"
+  if [ "$setup_version" = "git" ]; then
+    src_reset_git "git" "${3:-"https://github.com/ethereum/go-ethereum.git"}" "${2:-master}"
+    cd git
+    setup_version="git-$(git branch --show-current)-$(git rev-list HEAD | head -n 1 | head -c 10)"
+  elif [ ! -z "$setup_version" ] && [ ! -d "$setup_version" ]; then
+    wget "https://github.com/ethereum/go-ethereum/archive/refs/tags/${setup_version}.tar.gz"
+    mkdir $setup_version
+    cd $setup_version
+    tar xfz ../${setup_version}.tar.gz
     cd go-ethereum-*
-    geth_path=$(pwd)
+    src_need_build="yes"
+  fi
+  echo "setup geth: ${setup_version}  (build: ${src_need_build})"
 
+  if [ "$src_need_build" = "yes" ]; then
     make geth
 
-    rm ~/geth
-    ln -s $geth_path/build ~/geth
-
-    cd ..
-    cd ..
+    if [ ! -z "$src_link_path" ]; then
+      rm "$src_link_path/geth" 2> /dev/null
+      ln -s "$(pwd)/build" "$src_link_path/geth"
+    fi
   fi
-  cd ..
+
+  cd $base_dir
 }
 
 setup_erigon() {
   # update erigon
+  local base_dir=$(pwd)
   mkdir -p erigon
   cd erigon
-  erigon_release=$(get_github_release ledgerwatch/erigon)
-  echo "erigon release: ${erigon_release}"
-  if [ ! -z "$erigon_release" ] && [ ! -d "$erigon_release" ]; then
-    erigon_version=$(echo $erigon_release | sed 's/^v//')
-    wget "https://github.com/ledgerwatch/erigon/archive/refs/tags/${erigon_release}.tar.gz"
 
-    mkdir $erigon_release
-    cd $erigon_release
-    tar xfz ../${erigon_release}.tar.gz
+  setup_version="${1:-latest}"
+  if [ "$setup_version" = "latest" ]; then
+    setup_version=$(get_github_release ledgerwatch/erigon)
+  fi
+
+  src_need_build="no"
+  if [ "$setup_version" = "git" ]; then
+    src_reset_git "git" "${3:-"https://github.com/ledgerwatch/erigon.git"}" "${2:-devel}"
+    cd git
+    setup_version="git-$(git branch --show-current)-$(git rev-list HEAD | head -n 1 | head -c 10)"
+  elif [ ! -z "$setup_version" ] && [ ! -d "$setup_version" ]; then
+    wget "https://github.com/ledgerwatch/erigon/archive/refs/tags/${setup_version}.tar.gz"
+    mkdir $setup_version
+    cd $setup_version
+    tar xfz ../${setup_version}.tar.gz
     cd erigon-*
-    erigon_path=$(pwd)
+    src_need_build="yes"
+  fi
+  echo "setup erigon: ${setup_version}  (build: ${src_need_build})"
 
+  if [ "$src_need_build" = "yes" ]; then
     make erigon
 
-    rm ~/erigon
-    ln -s $erigon_path/build ~/erigon
-    cd ..
+    if [ ! -z "$src_link_path" ]; then
+      rm "$src_link_path/erigon" 2> /dev/null
+      ln -s "$(pwd)/build" "$src_link_path/erigon"
+    fi
   fi
-  cd ..
+
+  cd $base_dir
 }
 
 setup_lighthouse() {
   # update lighthouse
+  local base_dir=$(pwd)
+  local link_path=""
   mkdir -p lighthouse
   cd lighthouse
-  lighthouse_release=$(get_github_release sigp/lighthouse)
-  echo "lighthouse release: ${lighthouse_release}"
-  if [ ! -z "$lighthouse_release" ] && [ ! -d "$lighthouse_release" ]; then
-    wget "https://github.com/sigp/lighthouse/releases/download/$lighthouse_release/lighthouse-${lighthouse_release}-x86_64-unknown-linux-gnu-portable.tar.gz"
-    mkdir $lighthouse_release
-    cd $lighthouse_release
-    lighthouse_path=$(pwd)
 
-    tar xfz ../lighthouse-${lighthouse_release}-x86_64-unknown-linux-gnu-portable.tar.gz
-    chmod +x ./*
-    rm ~/lighthouse 2> /dev/null
-    ln -s $lighthouse_path ~/lighthouse
-    cd ..
+  setup_version="${1:-latest}"
+  if [ "$setup_version" = "latest" ]; then
+    setup_version=$(get_github_release sigp/lighthouse)
   fi
-  cd ..
+
+  src_need_build="no"
+  if [ "$setup_version" = "git" ]; then
+    src_reset_git "git" "${3:-"https://github.com/sigp/lighthouse.git"}" "${2:-unstable}"
+    cd git
+    setup_version="git-$(git branch --show-current)-$(git rev-list HEAD | head -n 1 | head -c 10)"
+    link_path="$HOME/.cargo/bin"
+  elif [ ! -z "$setup_version" ] && [ ! -d "$setup_version" ]; then
+    wget "https://github.com/sigp/lighthouse/releases/download/$setup_version/lighthouse-${setup_version}-x86_64-unknown-linux-gnu-portable.tar.gz"
+    mkdir $setup_version
+    cd $setup_version
+    link_path="$(pwd)"
+    tar xfz ../lighthouse-${setup_version}-x86_64-unknown-linux-gnu-portable.tar.gz
+    chmod +x ./*
+  fi
+  echo "setup lighthouse: ${setup_version}  (build: ${src_need_build})"
+
+  if [ "$src_need_build" = "yes" ]; then
+    make
+  fi
+
+  if [ ! -z "$src_link_path" ] && [ ! -z "$link_path" ] && [ -d "$link_path" ]; then
+    rm "$src_link_path/lighthouse" 2> /dev/null
+    ln -s "$link_path" "$src_link_path/lighthouse"
+  fi
+
+  cd $base_dir
 }
 
 setup_lodestar() {
   # update lodestar
+  local base_dir=$(pwd)
   mkdir -p lodestar
   cd lodestar
-  lodestar_release=$(get_github_release chainsafe/lodestar)
-  echo "lodestar release: ${lodestar_release}"
-  if [ ! -z "$lodestar_release" ] && [ ! -d "$lodestar_release" ]; then
-    wget "https://github.com/ChainSafe/lodestar/archive/refs/tags/${lodestar_release}.tar.gz"
-    mkdir $lodestar_release
-    cd $lodestar_release
-    tar xfz ../${lodestar_release}.tar.gz
-    cd lodestar-*
-    lodestar_path=$(pwd)
 
+  setup_version="${1:-latest}"
+  if [ "$setup_version" = "latest" ]; then
+    setup_version=$(get_github_release chainsafe/lodestar)
+  fi
+
+  src_need_build="no"
+  if [ "$setup_version" = "git" ]; then
+    src_reset_git "git" "${3:-"https://github.com/chainsafe/lodestar.git"}" "${2:-unstable}"
+    cd git
+    setup_version="git-$(git branch --show-current)-$(git rev-list HEAD | head -n 1 | head -c 10)"
+  elif [ ! -z "$setup_version" ] && [ ! -d "$setup_version" ]; then
+    wget "https://github.com/ChainSafe/lodestar/archive/refs/tags/${setup_version}.tar.gz"
+    mkdir $setup_version
+    cd $setup_version
+    tar xfz ../${setup_version}.tar.gz
+    cd lodestar-*
+    src_need_build="yes"
+  fi
+  echo "setup lodestar: ${setup_version}  (build: ${src_need_build})"
+
+  if [ "$src_need_build" = "yes" ]; then
     yarn install --ignore-optional
     yarn run build
-    
-    rm ~/lodestar 2> /dev/null
-    ln -s $lodestar_path ~/lodestar
-    cd ..
-    cd ..
+
+    if [ ! -z "$src_link_path" ]; then
+      rm "$src_link_path/lodestar" 2> /dev/null
+      ln -s "$(pwd)" "$src_link_path/lodestar"
+    fi
   fi
-  cd ..
+
+  cd $base_dir
 }
 
 setup_teku() {
   # update teku
+  local base_dir=$(pwd)
+  local link_path=""
   mkdir -p teku
   cd teku
-  teku_release=$(get_github_release ConsenSys/teku)
-  echo "teku release: ${teku_release}"
-  if [ ! -z "$teku_release" ] && [ ! -d "$teku_release" ]; then
-    wget https://artifacts.consensys.net/public/teku/raw/names/teku.tar.gz/versions/$teku_release/teku-$teku_release.tar.gz
-    mkdir $teku_release
-    cd $teku_release
-    teku_path=$(pwd)
 
-    tar xfz ../teku-$teku_release.tar.gz
-    
-    rm ~/teku 2> /dev/null
-    ln -s $teku_path/teku-$teku_release ~/teku
-    cd ..
+  setup_version="${1:-latest}"
+  if [ "$setup_version" = "latest" ]; then
+    setup_version=$(get_github_release ConsenSys/teku)
   fi
-  cd ..
+
+  src_need_build="no"
+  if [ "$setup_version" = "git" ]; then
+    src_reset_git "git" "${3:-"https://github.com/ConsenSys/teku.git"}" "${2:-unstable}"
+    cd git
+    setup_version="git-$(git branch --show-current)-$(git rev-list HEAD | head -n 1 | head -c 10)"
+    link_path="$(pwd)/build/install/teku"
+  elif [ ! -z "$setup_version" ] && [ ! -d "$setup_version" ]; then
+    wget https://artifacts.consensys.net/public/teku/raw/names/teku.tar.gz/versions/$setup_version/teku-$setup_version.tar.gz
+    mkdir $setup_version
+    cd $setup_version
+    tar xfz ../teku-$setup_version.tar.gz
+    link_path="$(pwd)"
+  fi
+  echo "setup teku: ${setup_version}  (build: ${src_need_build})"
+
+  if [ "$src_need_build" = "yes" ]; then
+    ./gradlew installDist
+  fi
+
+  if [ ! -z "$src_link_path" ] && [ ! -z "$link_path" ] && [ -d "$link_path" ]; then
+    rm "$src_link_path/teku" 2> /dev/null
+    ln -s "$link_path" "$src_link_path/teku"
+  fi
+
+  cd $base_dir
 }
+
 
 setup_jwtsecret() {
   # create jwtsecret if not found

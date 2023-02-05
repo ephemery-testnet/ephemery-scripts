@@ -2,6 +2,13 @@
 packages:
   - git
   - make
+  - cmake
+  - g++
+  - pkg-config
+  - llvm-dev
+  - libclang-dev
+  - clang
+  - protobuf-compiler
   - gcc
   - libc6-dev
   - sudo
@@ -131,8 +138,9 @@ write_files:
       cd src
 
       setup_golang
-      setup_geth
-      setup_lighthouse
+      setup_rust
+      setup_erigon git
+      setup_lighthouse git capella
 
   - path: /home/etherum/retention.sh
     content: |
