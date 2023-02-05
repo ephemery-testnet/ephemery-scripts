@@ -1,0 +1,174 @@
+# Default values for geth-lighthouse.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+# Replicas are not supported 
+
+# -- Overrides the chart's name
+nameOverride: ""
+# -- Overrides the chart's computed fullname
+fullnameOverride: ""
+
+global:
+  # -- Ethereum default network. Example: mainnet, goerli, ephemery
+  network: mainnet
+  # -- Engine API JSON-RPC Port, see also the official [Engine Specification](https://github.com/ethereum/execution-apis/blob/main/src/engine/specification.md)
+  engineRpcPort: 8551
+  # -- A list of pull secrets is used when credentials are needed to access a container registry with username and password.
+  imagePullSecrets: []
+  podAnnotations: {}
+  # -- Security Context
+  securityContext:
+    fsGroup: 1001
+    runAsGroup: 1001
+    runAsNonRoot: true
+    runAsUser: 1001
+  containerSecurityContext: {}
+    # capabilities:
+    #   drop:
+    #   - ALL
+    # readOnlyRootFilesystem: true
+    # runAsNonRoot: true
+    # runAsUser: 1000
+  updateStrategy:
+    # -- Update stategy type
+    type: RollingUpdate
+  terminationGracePeriodSeconds: 300
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  # -- PVC settings 
+  persistence:
+    # -- Access mode for the volume claim template
+    accessModes:
+    - ReadWriteOnce
+    # -- Requested size for volume claim template. When using OpenEBS Local PV Device this ensures that a block device with sufficient storage is selected.
+    size: 2000Gi
+    # -- Use a specific storage class.
+    storageClassName: null
+  serviceAccount:
+    # -- Enable service account (Note: Service Account will only be automatically created if `global.serviceAccount.name` is not set)
+    create: true
+    # -- Annotations to add to the service account
+    annotations: {}
+    # -- Name of an already existing service account. Setting this value disables the automatic service account creation
+    name: ""
+  # ServiceMonitor
+  serviceMonitor:
+    create: false
+
+# Init Container values
+InitContainer:
+  # -- Init container to set the correct permissions to access data directories. 
+  name: "init-container"
+  image:
+    # -- Container image repository. Archlinux contains curl and openssl.
+    repository: "archlinux"
+    # -- Container pull policy
+    pullPolicy: "IfNotPresent"
+    # -- Image tag
+    tag: "base-20221211.0.109768"
+    
+# If global.network=ephemery, run the [ephemery testnet](https://github.com/pk910/test-testnet-repo)
+ephemery:
+  # -- Name of the ephemery container
+  name: ephemery-init
+  # -- Specify ephemery github repository
+  repository: pk910/test-testnet-repo
+  image:
+    # -- Nixery.dev image
+    repository: "nixery.dev/shell/gnutar/gzip/curl/jq/kubectl/gawk"
+    # -- Container pull policy
+    pullPolicy: "IfNotPresent"
+    # -- Image tag
+    tag: latest
+
+# Geth values
+geth:
+  # -- Name of the container
+  name: geth
+  image:
+    # -- Container image repository
+    repository: ethereum/client-go
+    # -- Container pull policy
+    pullPolicy: IfNotPresent
+    # -- Image tag
+    tag: v1.10.26
+  ports:
+    # -- [Execution-API](https://github.com/ethereum/execution-apis) port
+    httpJsonRpc: 8545
+    # -- TCP and UDP P2P port: place in range 30000-32767 and verify that no existing nodes use these ports
+    p2p: 30303
+    metrics: 6060
+  # -- Specify the listen address of the JSON-RPC API server for the execution client.
+  jsonRpcInterface: "0.0.0.0"
+  livenessProbe:
+    tcpSocket:
+      # -- Liveness probe tcpSocket port, default is the geth JSON-RPC port
+      port: 8545
+    initialDelaySeconds: 60
+    periodSeconds: 120
+  # Readiness probe on the default geth JSON-RPC port
+  readinessProbe:
+    tcpSocket:
+      # -- Readiness probe tcpSocket port, default is the geth JSON-RPC port
+      port: 8545
+    initialDelaySeconds: 60
+    periodSeconds: 10
+  # -- Resource requests and limits
+  resources:
+    # TODO: Should we set limits or not?
+    #limits:
+    #  memory: 64Gi
+    requests:
+      cpu: 4000m
+      memory: 16Gi
+  serviceMonitor:
+    path: /debug/metrics/prometheus
+    interval: 30s
+    scrapeTimeout: 10s
+
+# Lighthouse values
+lighthouse:
+  # -- Name of the container
+  name: "lighthouse"
+  image:
+    # -- Container image repository
+    repository: "sigp/lighthouse"
+    pullPolicy: "IfNotPresent"
+    # -- Image tag
+    tag: v3.3.0
+  ports:
+    # -- [Beacon-API](https://ethereum.github.io/beacon-APIs/) port
+    httpRest: 5052
+    # -- TCP and UDP P2P port: place in range 30000-32767 and verify that no existing nodes use these ports
+    p2p: 30103
+    metrics: 5054
+  # -- Specify the listen address of the lighthouse REST API server for the consensus client.
+  httpRestInterface: "0.0.0.0"
+  checkpointSync:
+    enabled: false
+    url: "https://beaconstate.info"
+  livenessProbe:
+    tcpSocket:
+      # -- Liveness probe tcpSocket port, default is the lighthouse httpRest port.
+      port: 5052
+    initialDelaySeconds: 60
+    periodSeconds: 120
+  readinessProbe:
+    tcpSocket:
+      # -- Readiness probe tcpSocket port, default is the lighthouse httpRest port.
+      port: 5052
+    initialDelaySeconds: 60
+    periodSeconds: 10
+  # -- Resource requests and limits
+  resources: {}
+  # limits:
+      # cpu: 500m
+      # memory: 2Gi
+  # requests:
+      # cpu: 300m
+      # memory: 1Gi
+  serviceMonitor:
+    path: /metrics
+    interval: 30s
+    scrapeTimeout: 10s

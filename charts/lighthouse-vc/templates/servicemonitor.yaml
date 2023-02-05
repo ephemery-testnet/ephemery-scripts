@@ -1,0 +1,25 @@
+{{- if .Values.lighthouse.serviceMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "lighthouse-vc.serviceAccountName" . }}
+  labels:
+    {{- include "lighthouse-vc.labels" . | nindent 4 }}
+spec:
+  endpoints:
+  # lighthouse
+  - interval: {{ .Values.lighthouse.serviceMonitor.interval }}
+    {{- if .Values.lighthouse.serviceMonitor.scrapeTimeout }}
+    scrapeTimeout: {{ .Values.lighthouse.serviceMonitor.scrapeTimeout }}
+    {{- end }}
+    honorLabels: true
+    port: lh-vc-metrics
+    path: {{ .Values.lighthouse.serviceMonitor.path }}
+  jobLabel: "{{ .Release.Name }}"
+  selector:
+    matchLabels:
+      {{- include "lighthouse-vc.selectorLabels" . | nindent 8 }}
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace }}
+{{- end }}

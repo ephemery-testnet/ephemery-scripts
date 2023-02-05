@@ -53,7 +53,8 @@ Run:
      --bootnodes {bootnodes}
 ```
 
-For `{bootnodes}` look in ~/testnet-all/boot_enode.txt
+For `{bootnodes}` look in ~/testnet-all/boot_enode.txt. Entries must be separated,by,commas and "enclosed in quotes".
+
 For `{networkID}` look for `chainId` in ~/testnet-all/genesis.json
 
 ### Consensus Layer

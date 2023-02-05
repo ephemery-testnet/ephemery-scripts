@@ -29,6 +29,18 @@ docker-compose up
 ```
 Currently it only includes single client pair with automatic restart and needs more work. Feel free to extend it with other options. 
 
+### Kubernetes helm charts
+
+Currently only a geth-lighthouse client pair is supported and retention is not automated.
+
+To deploy a geth-lighthouse node via helm use the [chart](./charts/geth-lighthouse/) included in this repository. More information is available in the included [README.md](./charts/geth-lighthouse/README.md). In order to manually reset the network, follow these steps:
+
+1. Uninstall the chart: `helm uninstall geth-lighthouse-node` 
+2. Identify the PersistentVolumeClaim used by the chart: `kubectl get pvc`
+3. Delete the pvc, e.g. `kubectl delete pvc geth-lighthouse-node-0`.
+4. Install the chart with the latest iteration by setting the value `--set ephemery.iteration=<latest-iteration>`: 
+
+
 ## Manual deployment
 
 If you simply want to run a node on Ephemery, you can manually set this up by following one of the sets of instructions below.
