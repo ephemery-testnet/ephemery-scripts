@@ -113,13 +113,14 @@ setup_geth() {
       wget "https://github.com/ethereum/go-ethereum/archive/refs/tags/${setup_version}.tar.gz"
       mkdir $setup_version
       cd $setup_version
-      link_path="$(pwd)"
       tar xfz ../${setup_version}.tar.gz
       cd go-ethereum-*
       src_need_build="yes"
     else
-      link_path="$(pwd)/$setup_version"
+      cd $setup_version
+      cd go-ethereum-*
     fi
+    link_path="$(pwd)/build"
   fi
   echo "setup geth: ${setup_version}  (build: ${src_need_build})"
 
@@ -158,13 +159,14 @@ setup_erigon() {
       wget "https://github.com/ledgerwatch/erigon/archive/refs/tags/${setup_version}.tar.gz"
       mkdir $setup_version
       cd $setup_version
-      link_path="$(pwd)"
       tar xfz ../${setup_version}.tar.gz
       cd erigon-*
       src_need_build="yes"
     else
-      link_path="$(pwd)/$setup_version"
+      cd $setup_version
+      cd go-ethereum-*
     fi
+    link_path="$(pwd)/build"
   fi
   echo "setup erigon: ${setup_version}  (build: ${src_need_build})"
 
@@ -313,6 +315,50 @@ setup_teku() {
   cd $base_dir
 }
 
+setup_prysm() {
+  # update prysm
+  local base_dir=$(pwd)
+  local link_path=""
+  mkdir -p prysm
+  cd prysm
+
+  setup_version="${1:-latest}"
+  if [ "$setup_version" = "latest" ]; then
+    setup_version=$(get_github_release prysmaticlabs/prysm)
+  fi
+
+  src_need_build="no"
+  if [ "$setup_version" = "git" ]; then
+    src_reset_git "git" "${3:-"https://github.com/prysmaticlabs/prysm.git"}" "${2:-develop}"
+    cd git
+    setup_version="git-$(git branch --show-current)-$(git rev-list HEAD | head -n 1 | head -c 10)"
+    link_path="$(pwd)"
+  else
+    if [ ! -z "$setup_version" ] && [ ! -d "$setup_version" ]; then
+      mkdir $setup_version
+      cd $setup_version
+      wget -O ./beacon-chain https://github.com/prysmaticlabs/prysm/releases/download/$setup_version/beacon-chain-$setup_version-linux-amd64
+      wget -O ./validator https://github.com/prysmaticlabs/prysm/releases/download/$setup_version/validator-$setup_version-linux-amd64
+      chmod +x ./*
+      link_path="$(pwd)"
+    else
+      link_path="$(pwd)/$setup_version"
+    fi
+  fi
+  echo "setup prysm: ${setup_version}  (build: ${src_need_build})"
+
+  if [ "$src_need_build" = "yes" ]; then
+    go install github.com/bazelbuild/bazelisk@latest
+    bazelisk build //cmd/beacon-chain:beacon-chain
+  fi
+
+  if [ ! -z "$src_link_path" ] && [ ! -z "$link_path" ] && [ -d "$link_path" ]; then
+    rm "$src_link_path/teku" 2> /dev/null
+    ln -s "$link_path" "$src_link_path/teku"
+  fi
+
+  cd $base_dir
+}
 
 setup_jwtsecret() {
   # create jwtsecret if not found
