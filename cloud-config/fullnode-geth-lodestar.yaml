@@ -97,8 +97,8 @@ write_files:
 
       setup_golang
       setup_eth2valtools
-      setup_geth git
-      setup_lodestar git
+      setup_geth
+      setup_lodestar
       setup_jwtsecret
 
   - path: /home/etherum/retention.sh

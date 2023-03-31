@@ -95,8 +95,8 @@ write_files:
 
       setup_golang
       setup_eth2valtools
-      setup_geth git
-      setup_teku git
+      setup_geth
+      setup_teku
       setup_jwtsecret
 
   - path: /home/etherum/retention.sh
