@@ -60,7 +60,7 @@ ephemery:
   # -- Name of the ephemery container
   name: ephemery-init
   # -- Specify ephemery github repository
-  repository: pk910/test-testnet-repo
+  repository: ephemery-testnet/ephemery-genesis
   image:
     # -- Nixery.dev image
     repository: "nixery.dev/shell/gnutar/gzip/curl/jq/kubectl/gawk"

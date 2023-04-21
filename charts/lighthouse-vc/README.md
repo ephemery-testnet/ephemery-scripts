@@ -38,7 +38,7 @@ curl localhost:5062/lighthouse/version -H "Authorization: Bearer <enter-bearer-t
 | ephemery.image.repository | string | `"nixery.dev/shell/gnutar/gzip/curl/jq/kubectl/gawk"` | Nixery.dev image |
 | ephemery.image.tag | string | `"latest"` | Image tag |
 | ephemery.name | string | `"ephemery-init"` | Name of the ephemery container |
-| ephemery.repository | string | `"pk910/test-testnet-repo"` | Specify ephemery github repository |
+| ephemery.repository | string | `"ephemery-testnet/ephemery-genesis"` | Specify ephemery github repository |
 | fullnameOverride | string | `""` | Overrides the chart's computed fullname |
 | global.affinity | object | `{}` |  |
 | global.beaconNodes | list | `["http://geth-lighthouse-node:5052"]` | List of Consenus Client (Beacon Nodes) endpoints available within cluster |

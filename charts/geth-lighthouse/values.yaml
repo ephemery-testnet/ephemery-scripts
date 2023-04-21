@@ -68,12 +68,12 @@ InitContainer:
     # -- Image tag
     tag: "base-20221211.0.109768"
     
-# If global.network=ephemery, run the [ephemery testnet](https://github.com/pk910/test-testnet-repo)
+# If global.network=ephemery, run the [ephemery testnet](https://github.com/ephemery-testnet/ephemery-genesis)
 ephemery:
   # -- Name of the ephemery container
   name: ephemery-init
   # -- Specify ephemery github repository
-  repository: pk910/test-testnet-repo
+  repository: ephemery-testnet/ephemery-genesis
   image:
     # -- Nixery.dev image
     repository: "nixery.dev/shell/gnutar/gzip/curl/jq/kubectl/gawk"

@@ -16,7 +16,7 @@ mkdir testnet-all
 cd testnet-all
 ```
 
-Download the `testnet-all.tar.gz` file for the [latest release of the Ephemery testnet](https://github.com/pk910/test-testnet-repo/releases) to this directory using `wget`. Then unzip inside this folder.
+Download the `testnet-all.tar.gz` file for the [latest release of the Ephemery testnet](https://github.com/ephemery-testnet/ephemery-genesis/releases) to this directory using `wget`. Then unzip inside this folder.
 ```
 tar -xzf testnet-all.tar.gz
 ```

@@ -1,6 +1,6 @@
 # Ephemeral testnets scripts
 
-Tooling for participating in [Ephemeral testnet](https://github.com/taxmeifyoucan/ephemeral-testnet) based on its [genesis repository](https://github.com/pk910/test-testnet-repo). 
+Tooling for participating in [Ephemeral testnet](https://github.com/ephemery-testnet/ephemery-resources) based on its [genesis repository](https://github.com/ephemery-testnet/ephemery-genesis). 
 
 Running a node in this test network requires resetting clients with a new genesis after given period. In this repository, you can find scripts and deployment for this automatized setup. 
 

@@ -103,7 +103,7 @@ write_files:
   - path: /root/setup.sh
     content: |
       #!/bin/bash
-      wget https://raw.githubusercontent.com/pk910/test-testnet-scripts/master/resources/setup-services.sh
+      wget https://raw.githubusercontent.com/ephemery-testnet/ephemery-scripts/master/resources/setup-services.sh
       source ./setup-services.sh
       chmod +x /root/reset-*
 
@@ -117,7 +117,7 @@ write_files:
       #!/bin/bash
       cd ~
       if ! [ -f ./setup-clients.sh ]; then
-        wget https://raw.githubusercontent.com/pk910/test-testnet-scripts/master/resources/setup-clients.sh
+        wget https://raw.githubusercontent.com/ephemery-testnet/ephemery-scripts/master/resources/setup-clients.sh
       fi
       source ./setup-clients.sh
       src_link_path="$(pwd)"
@@ -133,7 +133,7 @@ write_files:
     content: |
       #!/bin/bash
 
-      genesis_repository="pk910/test-testnet-repo"
+      genesis_repository="ephemery-testnet/ephemery-genesis"
       testnet_dir=/home/etherum/testnet
       el_datadir=/home/etherum/data-geth
       cl_datadir=/home/etherum/data-lh
@@ -187,7 +187,7 @@ write_files:
       #!/bin/bash
       cd /home/etherum
       chmod +x retention.sh
-      wget https://raw.githubusercontent.com/pk910/test-testnet-scripts/master/resources/retention-lib.sh
+      wget https://raw.githubusercontent.com/ephemery-testnet/ephemery-scripts/master/resources/retention-lib.sh
       /home/etherum/retention.sh
       (2>/dev/null crontab -l ; echo "*/5 * * * * /home/etherum/retention.sh") | crontab -
   - path: /home/etherum/setup-validators.sh
@@ -212,7 +212,7 @@ write_files:
       chmod +x reset.sh
 
       mkdir -p ./data-explorer
-      wget https://raw.githubusercontent.com/pk910/test-testnet-scripts/master/resources/blockscout-envfile.txt
+      wget https://raw.githubusercontent.com/ephemery-testnet/ephemery-scripts/master/resources/blockscout-envfile.txt
 
   - path: /home/blockscout/start.sh
     content: |

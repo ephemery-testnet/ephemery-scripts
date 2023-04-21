@@ -1,6 +1,6 @@
 #!/bin/bash
 
-genesis_repository="pk910/test-testnet-repo"
+genesis_repository="ephemery-testnet/ephemery-genesis"
 testnet_dir="/data/testnet"
 el_datadir="/data/geth-data"
 cl_datadir="/data/lh-data"

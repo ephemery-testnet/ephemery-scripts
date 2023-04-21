@@ -26,7 +26,7 @@ helm install geth-lighthouse-node-1 charts/geth-lighthouse --set geth.ports.p2p=
 ## ephemery
 
 The ephemeral testnet can be enabled with the following flag: `--set global.network=ephemery`.
-The current iteration is shown on the [project website](https://ephemery.pk910.de/).
+The current iteration is shown on the [project website](https://ephemery.dev/).
 
 NOTE: Since the ephemeral testnet is small, the requested storage size can be reduced: `--set global.persistence.size=10Gi`
 
@@ -44,7 +44,7 @@ The testnet rolls back to genesis every two days. Rollback is automated via a Cr
 | ephemery.image.repository | string | `"nixery.dev/shell/gnutar/gzip/curl/jq/kubectl/gawk"` | Nixery.dev image |
 | ephemery.image.tag | string | `"latest"` | Image tag |
 | ephemery.name | string | `"ephemery-init"` | Name of the ephemery container |
-| ephemery.repository | string | `"pk910/test-testnet-repo"` | Specify ephemery github repository |
+| ephemery.repository | string | `"ephemery-testnet/ephemery-genesis"` | Specify ephemery github repository |
 | fullnameOverride | string | `""` | Overrides the chart's computed fullname |
 | geth.image.pullPolicy | string | `"IfNotPresent"` | Container pull policy |
 | geth.image.repository | string | `"ethereum/client-go"` | Container image repository |
