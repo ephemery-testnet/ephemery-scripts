@@ -1,6 +1,6 @@
 # geth-lighthouse
 
-![Version: 0.1.1](https://img.shields.io/badge/Version-0.1.1-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
+![Version: 0.1.2](https://img.shields.io/badge/Version-0.1.2-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
 
 Helm chart that spins up a post-merge ethereum node consisting of the go-ethereum (geth) execution client and the lighthouse consensus client.
 
@@ -48,7 +48,7 @@ The testnet rolls back to genesis every two days. Rollback is automated via a Cr
 | fullnameOverride | string | `""` | Overrides the chart's computed fullname |
 | geth.image.pullPolicy | string | `"IfNotPresent"` | Container pull policy |
 | geth.image.repository | string | `"ethereum/client-go"` | Container image repository |
-| geth.image.tag | string | `"v1.10.26"` | Image tag |
+| geth.image.tag | string | `"v1.11.6"` | Image tag |
 | geth.jsonRpcInterface | string | `"0.0.0.0"` | Specify the listen address of the JSON-RPC API server for the execution client. |
 | geth.livenessProbe.initialDelaySeconds | int | `60` |  |
 | geth.livenessProbe.periodSeconds | int | `120` |  |
@@ -60,14 +60,14 @@ The testnet rolls back to genesis every two days. Rollback is automated via a Cr
 | geth.readinessProbe.initialDelaySeconds | int | `60` |  |
 | geth.readinessProbe.periodSeconds | int | `10` |  |
 | geth.readinessProbe.tcpSocket.port | int | `8545` | Readiness probe tcpSocket port, default is the geth JSON-RPC port |
-| geth.resources | object | `{"requests":{"cpu":"4000m","memory":"16Gi"}}` | Resource requests and limits |
+| geth.resources | object | `{}` | Resource requests and limits |
 | geth.serviceMonitor.interval | string | `"30s"` |  |
 | geth.serviceMonitor.path | string | `"/debug/metrics/prometheus"` |  |
 | geth.serviceMonitor.scrapeTimeout | string | `"10s"` |  |
 | global.affinity | object | `{}` |  |
 | global.containerSecurityContext | object | `{}` |  |
 | global.engineRpcPort | int | `8551` | Engine API JSON-RPC Port, see also the official [Engine Specification](https://github.com/ethereum/execution-apis/blob/main/src/engine/specification.md) |
-| global.imagePullSecrets | list | `[]` | A list of pull secrets is used when credentials are needed to access a container registry with username and password. |
+| global.imagePullSecrets | object | `{}` | A list of pull secrets is used when credentials are needed to access a container registry with username and password. |
 | global.network | string | `"mainnet"` | Ethereum default network. Example: mainnet, goerli, ephemery |
 | global.nodeSelector | object | `{}` |  |
 | global.persistence | object | `{"accessModes":["ReadWriteOnce"],"size":"2000Gi","storageClassName":null}` | PVC settings  |
@@ -76,6 +76,8 @@ The testnet rolls back to genesis every two days. Rollback is automated via a Cr
 | global.persistence.storageClassName | string | `nil` | Use a specific storage class. |
 | global.podAnnotations | object | `{}` |  |
 | global.securityContext | object | `{"fsGroup":1001,"runAsGroup":1001,"runAsNonRoot":true,"runAsUser":1001}` | Security Context |
+| global.service.annotations | object | `{}` | Service annotations, e.g. for metallb: metallb.universe.tf/loadBalancerIPs: 10.1.2.3 |
+| global.service.type | string | `"ClusterIP"` | Service type, ClusterIP or LoadBalancer |
 | global.serviceAccount.annotations | object | `{}` | Annotations to add to the service account |
 | global.serviceAccount.create | bool | `true` | Enable service account (Note: Service Account will only be automatically created if `global.serviceAccount.name` is not set) |
 | global.serviceAccount.name | string | `""` | Name of an already existing service account. Setting this value disables the automatic service account creation |
@@ -85,10 +87,12 @@ The testnet rolls back to genesis every two days. Rollback is automated via a Cr
 | global.updateStrategy.type | string | `"RollingUpdate"` | Update stategy type |
 | lighthouse.checkpointSync.enabled | bool | `false` |  |
 | lighthouse.checkpointSync.url | string | `"https://beaconstate.info"` |  |
+| lighthouse.extBuilder.enabled | bool | `true` | enable external builder (mev-boost) |
+| lighthouse.extBuilder.url | string | `"http://mev-boost:18500"` | url of external builder |
 | lighthouse.httpRestInterface | string | `"0.0.0.0"` | Specify the listen address of the lighthouse REST API server for the consensus client. |
 | lighthouse.image.pullPolicy | string | `"IfNotPresent"` |  |
 | lighthouse.image.repository | string | `"sigp/lighthouse"` | Container image repository |
-| lighthouse.image.tag | string | `"v3.3.0"` | Image tag |
+| lighthouse.image.tag | string | `"v4.1.0"` | Image tag |
 | lighthouse.livenessProbe.initialDelaySeconds | int | `60` |  |
 | lighthouse.livenessProbe.periodSeconds | int | `120` |  |
 | lighthouse.livenessProbe.tcpSocket.port | int | `5052` | Liveness probe tcpSocket port, default is the lighthouse httpRest port. |

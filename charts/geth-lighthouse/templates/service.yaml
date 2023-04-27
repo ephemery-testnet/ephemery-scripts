@@ -4,8 +4,10 @@ metadata:
   name: {{ include "geth-lighthouse.fullname" . }}
   labels:
     {{- include "geth-lighthouse.labels" . | nindent 4 }}
+  annotations:
+    {{- toYaml .Values.global.service.annotations | nindent 4}}
 spec:
-  type: ClusterIP
+  type: {{ .Values.global.service.type }}
   # Note Engine API port is NOT exposed. After the Merge Execution Client and Consenus Client have strict 1:1 mapping
   ports:
     - port: {{ .Values.geth.ports.httpJsonRpc }}

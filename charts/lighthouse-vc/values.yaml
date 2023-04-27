@@ -54,6 +54,16 @@ global:
     annotations: {}
     # -- Name of an already existing service account. Setting this value disables the automatic service account creation
     name: ""
+  serviceMonitor:
+    create: false
+    path: /metrics
+    interval: 30s
+    scrapeTimeout: 10s
+  service:
+    # -- Service type, ClusterIP or LoadBalancer
+    type: ClusterIP
+    # -- Service annotations, e.g. for metallb: metallb.universe.tf/loadBalancerIPs: 10.1.2.3
+    annotations: {}
 
 # ephemery testnet
 ephemery:
@@ -73,17 +83,17 @@ ephemery:
 lighthouse:
   # -- Name of the container
   name: "lighthouse"
+  graffiti: "lighthouse"
+  feeRecipient: "0xc90E920F4DCfd4954230edCaB168D0C5B9561e03"
   image:
     # -- Container image repository
     repository: "sigp/lighthouse"
     pullPolicy: "IfNotPresent"
     # -- Image tag
-    tag: v3.2.1
+    tag: v4.1.0
   ports:
     # -- [Validator Client API](https://lighthouse-book.sigmaprime.io/api-vc.html) port
     httpJson: 5062
-    # -- VC node port starts at 31001 + #replicas (e.g. 30101 for one replica)
-    nodePortsStartAt: 31001
     # -- Metrics ports
     metrics: 6060
   # -- Specify the listen address of the lighthouse REST API server for the consensus client.
@@ -96,7 +106,7 @@ lighthouse:
       path: /lighthouse/auth
       # -- Liveness probe http port, default is the lighthouse httpRest port.
       port: 5062
-    initialDelaySeconds: 5
+    initialDelaySeconds: 500
     periodSeconds: 30
   readinessProbe:
     httpGet:
@@ -105,7 +115,7 @@ lighthouse:
       path: /lighthouse/auth
       # -- Readiness probe tcpSocket port, default is the lighthouse httpRest port.
       port: 5062
-    initialDelaySeconds: 20
+    initialDelaySeconds: 500
     periodSeconds: 30
   # -- Resource requests and limits
   resources: {}

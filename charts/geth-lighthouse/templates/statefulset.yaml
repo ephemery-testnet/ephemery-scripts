@@ -179,7 +179,7 @@ spec:
               rm -r /data/lighthouse/beacon;
               {{- end }}
               exec lighthouse
-               {{- if ne .Values.global.network "ephemery" }}
+              {{- if ne .Values.global.network "ephemery" }}
               --network={{ .Values.global.network }}
               {{- end }}
               bn
@@ -189,10 +189,7 @@ spec:
               {{- end }}
               --port={{ .Values.lighthouse.ports.p2p }}
               --disable-upnp
-              --disable-enr-auto-update
-              --enr-address=$PUBLIC_IP
-              --enr-tcp-port={{ .Values.lighthouse.ports.p2p }}
-              --enr-udp-port={{ .Values.lighthouse.ports.p2p }}
+              --discovery-port={{ .Values.lighthouse.ports.p2p }}
               --staking
               --datadir=/data/lighthouse
               --execution-endpoint=http://127.0.0.1:{{ .Values.global.engineRpcPort }}
@@ -202,6 +199,9 @@ spec:
               --http-port={{ .Values.lighthouse.ports.httpRest }}
               {{- if .Values.lighthouse.checkpointSync.enabled }}
               --checkpoint-sync-url={{ .Values.lighthouse.checkpointSync.url }}
+              {{- end }}
+              {{- if .Values.lighthouse.extBuilder.enabled }}
+              --builder={{ .Values.lighthouse.extBuilder.url }}
               {{- end }}
               --prune-payloads=false
               --metrics
