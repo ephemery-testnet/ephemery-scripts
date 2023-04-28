@@ -31,15 +31,9 @@ Currently it only includes single client pair with automatic restart and needs m
 
 ### Kubernetes helm charts
 
-Currently only a geth-lighthouse client pair is supported and retention is not automated.
+Currently only the geth-lighthouse client pair is supported, retention is automated via a Kubernetes CronJob.
 
-To deploy a geth-lighthouse node via helm use the [chart](./charts/geth-lighthouse/) included in this repository. More information is available in the included [README.md](./charts/geth-lighthouse/README.md). In order to manually reset the network, follow these steps:
-
-1. Uninstall the chart: `helm uninstall geth-lighthouse-node` 
-2. Identify the PersistentVolumeClaim used by the chart: `kubectl get pvc`
-3. Delete the pvc, e.g. `kubectl delete pvc geth-lighthouse-node-0`.
-4. Install the chart with the latest iteration by setting the value `--set ephemery.iteration=<latest-iteration>`: 
-
+More information on how to deploy the chart and it's default values can be found in [README.md](./charts/geth-lighthouse/README.md).
 
 ## Manual deployment
 
