@@ -153,7 +153,7 @@ lighthouse:
     url: "https://beaconstate.info"
   extBuilder:
     # -- enable external builder (mev-boost)
-    enabled: true
+    enabled: false
     # -- url of external builder
     url: http://mev-boost:18500
   livenessProbe:

@@ -23,14 +23,14 @@ P2P traffic. When deploying multiple nodes, set the p2p ports accordingly and en
 helm install geth-lighthouse-node-1 charts/geth-lighthouse --set geth.ports.p2p=30304 --set lighthouse.ports.p2p=30104
 ```
 
-## ephemery
+## Ephemery
 
 The ephemeral testnet can be enabled with the following flag: `--set global.network=ephemery`.
 The current iteration is shown on the [project website](https://ephemery.dev/).
 
 NOTE: Since the ephemeral testnet is small, the requested storage size can be reduced: `--set global.persistence.size=10Gi`
 
-The testnet rolls back to genesis every two days. Rollback is automated via a CronJob that checks every hour if there is a new release.
+Testnet rollback is automated via a CronJob that checks every five minutes whether there is a new genesis release.
 
 ## Values
 
@@ -48,7 +48,7 @@ The testnet rolls back to genesis every two days. Rollback is automated via a Cr
 | fullnameOverride | string | `""` | Overrides the chart's computed fullname |
 | geth.image.pullPolicy | string | `"IfNotPresent"` | Container pull policy |
 | geth.image.repository | string | `"ethereum/client-go"` | Container image repository |
-| geth.image.tag | string | `"v1.11.6"` | Image tag |
+| geth.image.tag | string | `"v1.12.0"` | Image tag |
 | geth.jsonRpcInterface | string | `"0.0.0.0"` | Specify the listen address of the JSON-RPC API server for the execution client. |
 | geth.livenessProbe.initialDelaySeconds | int | `60` |  |
 | geth.livenessProbe.periodSeconds | int | `120` |  |
@@ -87,12 +87,12 @@ The testnet rolls back to genesis every two days. Rollback is automated via a Cr
 | global.updateStrategy.type | string | `"RollingUpdate"` | Update stategy type |
 | lighthouse.checkpointSync.enabled | bool | `false` |  |
 | lighthouse.checkpointSync.url | string | `"https://beaconstate.info"` |  |
-| lighthouse.extBuilder.enabled | bool | `true` | enable external builder (mev-boost) |
+| lighthouse.extBuilder.enabled | bool | `false` | enable external builder (mev-boost) |
 | lighthouse.extBuilder.url | string | `"http://mev-boost:18500"` | url of external builder |
 | lighthouse.httpRestInterface | string | `"0.0.0.0"` | Specify the listen address of the lighthouse REST API server for the consensus client. |
 | lighthouse.image.pullPolicy | string | `"IfNotPresent"` |  |
 | lighthouse.image.repository | string | `"sigp/lighthouse"` | Container image repository |
-| lighthouse.image.tag | string | `"v4.1.0"` | Image tag |
+| lighthouse.image.tag | string | `"v4.2.0"` | Image tag |
 | lighthouse.livenessProbe.initialDelaySeconds | int | `60` |  |
 | lighthouse.livenessProbe.periodSeconds | int | `120` |  |
 | lighthouse.livenessProbe.tcpSocket.port | int | `5052` | Liveness probe tcpSocket port, default is the lighthouse httpRest port. |
