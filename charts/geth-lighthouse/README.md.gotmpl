@@ -23,14 +23,14 @@ P2P traffic. When deploying multiple nodes, set the p2p ports accordingly and en
 helm install geth-lighthouse-node-1 charts/geth-lighthouse --set geth.ports.p2p=30304 --set lighthouse.ports.p2p=30104
 ```
 
-## ephemery 
+## Ephemery 
 
 The ephemeral testnet can be enabled with the following flag: `--set global.network=ephemery`.
 The current iteration is shown on the [project website](https://ephemery.dev/). 
 
 NOTE: Since the ephemeral testnet is small, the requested storage size can be reduced: `--set global.persistence.size=10Gi`
 
-The testnet rolls back to genesis every two days. Rollback is automated via a CronJob that checks every hour if there is a new release.
+Testnet rollback is automated via a CronJob that checks every five minutes whether there is a new genesis release.
 
 
 {{ template "chart.valuesSection" . }}

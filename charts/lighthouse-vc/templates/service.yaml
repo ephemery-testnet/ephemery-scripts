@@ -4,8 +4,10 @@ metadata:
   name: {{ include "lighthouse-vc.fullname" . }}
   labels:
     {{- include "lighthouse-vc.labels" . | nindent 4 }}
+  annotations:
+    {{- toYaml .Values.global.service.annotations | nindent 4}}
 spec:
-  type: ClusterIP
+  type: {{ .Values.global.service.type }}
   ports:
     - port: {{ .Values.lighthouse.ports.httpJson }}
       targetPort: {{ .Values.lighthouse.ports.httpJson }}

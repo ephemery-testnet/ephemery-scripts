@@ -14,7 +14,7 @@ global:
   # -- Engine API JSON-RPC Port, see also the official [Engine Specification](https://github.com/ethereum/execution-apis/blob/main/src/engine/specification.md)
   engineRpcPort: 8551
   # -- A list of pull secrets is used when credentials are needed to access a container registry with username and password.
-  imagePullSecrets: []
+  imagePullSecrets: {}
   podAnnotations: {}
   # -- Security Context
   securityContext:
@@ -52,9 +52,13 @@ global:
     annotations: {}
     # -- Name of an already existing service account. Setting this value disables the automatic service account creation
     name: ""
-  # ServiceMonitor
   serviceMonitor:
     create: false
+  service:
+    # -- Service type, ClusterIP or LoadBalancer
+    type: ClusterIP
+    # -- Service annotations, e.g. for metallb: metallb.universe.tf/loadBalancerIPs: 10.1.2.3
+    annotations: {}
 
 # Init Container values
 InitContainer:
@@ -67,7 +71,7 @@ InitContainer:
     pullPolicy: "IfNotPresent"
     # -- Image tag
     tag: "base-20221211.0.109768"
-    
+
 # If global.network=ephemery, run the [ephemery testnet](https://github.com/ephemery-testnet/ephemery-genesis)
 ephemery:
   # -- Name of the ephemery container
@@ -92,7 +96,7 @@ geth:
     # -- Container pull policy
     pullPolicy: IfNotPresent
     # -- Image tag
-    tag: v1.10.26
+    tag: v1.12.0
   ports:
     # -- [Execution-API](https://github.com/ethereum/execution-apis) port
     httpJsonRpc: 8545
@@ -115,13 +119,12 @@ geth:
     initialDelaySeconds: 60
     periodSeconds: 10
   # -- Resource requests and limits
-  resources:
-    # TODO: Should we set limits or not?
-    #limits:
-    #  memory: 64Gi
-    requests:
-      cpu: 4000m
-      memory: 16Gi
+  resources: {}
+  #  limits:
+  #    memory: 32Gi
+  #  requests:
+  #    cpu: 4000m
+  #    memory: 16Gi
   serviceMonitor:
     path: /debug/metrics/prometheus
     interval: 30s
@@ -136,7 +139,7 @@ lighthouse:
     repository: "sigp/lighthouse"
     pullPolicy: "IfNotPresent"
     # -- Image tag
-    tag: v3.3.0
+    tag: v4.2.0
   ports:
     # -- [Beacon-API](https://ethereum.github.io/beacon-APIs/) port
     httpRest: 5052
@@ -148,6 +151,11 @@ lighthouse:
   checkpointSync:
     enabled: false
     url: "https://beaconstate.info"
+  extBuilder:
+    # -- enable external builder (mev-boost)
+    enabled: true
+    # -- url of external builder
+    url: http://mev-boost:18500
   livenessProbe:
     tcpSocket:
       # -- Liveness probe tcpSocket port, default is the lighthouse httpRest port.
