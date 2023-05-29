@@ -189,6 +189,10 @@ spec:
               {{- end }}
               --port={{ .Values.lighthouse.ports.p2p }}
               --disable-upnp
+              --disable-enr-auto-update
+              --enr-address=$PUBLIC_IP
+              --enr-tcp-port={{ .Values.lighthouse.ports.p2p }}
+              --enr-udp-port={{ .Values.lighthouse.ports.p2p }}
               --discovery-port={{ .Values.lighthouse.ports.p2p }}
               --staking
               --datadir=/data/lighthouse
