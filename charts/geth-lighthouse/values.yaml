@@ -96,7 +96,7 @@ geth:
     # -- Container pull policy
     pullPolicy: IfNotPresent
     # -- Image tag
-    tag: v1.11.6
+    tag: v1.12.0
   ports:
     # -- [Execution-API](https://github.com/ethereum/execution-apis) port
     httpJsonRpc: 8545
@@ -139,7 +139,7 @@ lighthouse:
     repository: "sigp/lighthouse"
     pullPolicy: "IfNotPresent"
     # -- Image tag
-    tag: v4.1.0
+    tag: v4.2.0
   ports:
     # -- [Beacon-API](https://ethereum.github.io/beacon-APIs/) port
     httpRest: 5052
