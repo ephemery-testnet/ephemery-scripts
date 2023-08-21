@@ -1,8 +1,10 @@
-Instructions for manually setting up a node on Ephemery using geth and teku.
+Instructions for manually setting up a node on Ephemery using geth and lodestar.
 
 ### Prerequisites
 
 [Install golang](https://go.dev/doc/install) for your system.
+[Install Yarn](https://classic.yarnpkg.com/lang/en/docs/install/).
+Check that your [Node](https://nodejs.org/) version is >= v18.15.0.
 
 Then:
 ```
@@ -23,6 +25,7 @@ tar -xzf testnet-all.tar.gz
 
 ### Optional: Generate jwt
 If you are generating a jwt (refer to client documentation) the following command will generate a secret to ensure secure communication between the Execution Client and the Consensus client at `/tmp/jwtsecret`. Be mindful that using a jwt may require additional flags to be provided.
+
 
 ```
 openssl rand -hex 32 | tr -d "\n" > "/tmp/jwtsecret"
@@ -70,27 +73,43 @@ Depending on your OS, it may be necessary to add additional flags, for example `
 
 Open a new terminal session.
 
+Lodestar doesn’t provide a prebuilt binary, so we must build from source - see their [docs](https://chainsafe.github.io/lodestar/install/source/).  
+
 Download and build software:
 ```
 cd ~
-git clone https://github.com/ConsenSys/teku.git
-cd teku
-./gradlew installDist
+git clone https://github.com/chainsafe/lodestar.git
+cd lodestar
+yarn
+yarn run build
 ```
 Run:
 ```
-./teku/build/install/teku/bin/teku \
-    --network ~/testnet-all/config.yaml \
-    --initial-state ~/testnet-all/genesis.ssz \
-    --data-path "datadir-teku" \
-    --ee-endpoint http://localhost:8551 \
-    --ee-jwt-secret-file "/tmp/jwtsecret" \
-    --log-destination console \
-    --p2p-discovery-bootnodes {bootnodes}
+./lodestar beacon \
+    --dataDir="datadir-lodestar" \
+    --paramsFile=~/testnet-all/config.yaml \
+    --genesisStateFile=~/testnet-all/genesis.ssz \
+    --eth1.depositContractDeployBlock=0 \
+    --network.connectToDiscv5Bootnodes=true \
+    --discv5=true \
+    --eth1=true \
+    --eth1.providerUrls=http://localhost:8545 \
+    --execution.urls=http://localhost:8551 \
+    --bootnodes={BOOTNODE_ENR_LIST} \
+    --jwt-secret=/tmp/jwtsecret \
+    --rest=true \
+    --rest.address=0.0.0.0 \
+    --rest.port=4000
 ```
 
-For `{bootnodes}` look in ~/testnet-all/boot_enr.txt. Entries must be separated,by,commas and "enclosed in quotes".
+For `{BOOTNODE_ENR_LIST}` look in ~/testnet-all/nodevars_env.txt.
 
 ### A note on Ephemery environment variables
 
-As an alternative to manually copying and pasting Ephemery variables into the above commands, you can simply source the relevant Ephemery environment variables and load them to the shell session prior to running the clients.
+As an alternative to manually copying and pasting Ephemery variables into the above commands, you can simply source the Ephemery environment variables and load them to the shell session prior to running the clients, for example:
+
+```
+source node_vars.txt 
+...
+--bootnodes $BOOTNODE_ENR_LIST
+```
