@@ -254,7 +254,8 @@ setup_lodestar() {
       link_path="$(pwd)"
       src_need_build="yes"
     else
-      link_path="$(pwd)/$setup_version/lodestar-$setup_version"
+      cd $setup_version/lodestar-*
+      link_path="$(pwd)"
     fi
   fi
   echo "setup lodestar: ${setup_version}  (build: ${src_need_build})"
