@@ -249,12 +249,12 @@ setup_lodestar() {
       wget "https://github.com/ChainSafe/lodestar/archive/refs/tags/${setup_version}.tar.gz"
       mkdir $setup_version
       cd $setup_version
-      link_path="$(pwd)"
       tar xfz ../${setup_version}.tar.gz
       cd lodestar-*
+      link_path="$(pwd)"
       src_need_build="yes"
     else
-      link_path="$(pwd)/$setup_version"
+      link_path="$(pwd)/$setup_version/lodestar-$setup_version"
     fi
   fi
   echo "setup lodestar: ${setup_version}  (build: ${src_need_build})"
@@ -295,10 +295,11 @@ setup_teku() {
       wget https://artifacts.consensys.net/public/teku/raw/names/teku.tar.gz/versions/$setup_version/teku-$setup_version.tar.gz
       mkdir $setup_version
       cd $setup_version
-      link_path="$(pwd)"
       tar xfz ../teku-$setup_version.tar.gz
+      cd teku-*
+      link_path="$(pwd)"
     else
-      link_path="$(pwd)/$setup_version"
+      link_path="$(pwd)/$setup_version/teku-$setup_version"
     fi
   fi
   echo "setup teku: ${setup_version}  (build: ${src_need_build})"
