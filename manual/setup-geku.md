@@ -12,6 +12,7 @@ sudo apt install -y git default-jre make gcc
 ### Download config
 
 ```
+cd ~
 mkdir testnet-all
 cd testnet-all
 ```
