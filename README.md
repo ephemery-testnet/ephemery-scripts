@@ -42,3 +42,5 @@ If you simply want to run a node on Ephemery, you can manually set this up by fo
 Warning: you will need to manually reset your system when the testnet is reset.
 
 - [geth + teku](./manual/setup-geku.md)
+- [geth + lodestar](./manual/setup-geth-lodestar.md)
+- [reth + lighthouse](./manual/setup-reth-lighthouse.md)
