@@ -24,8 +24,8 @@ Download the `testnet-all.tar.gz` file for the [latest release of the Ephemery t
 tar -xzf testnet-all.tar.gz
 ```
 
-### Generate JWT
-A JWT secret file should be used to ensure secure communication between the Execution Client (Reth) and the Consensus client (Lighthouse). Use the following commands, according to the [Lighhouse documentation](https://lighthouse-book.sigmaprime.io/run_a_node.html#step-1-create-a-jwt-secret-file), to create a JWT secret in the `/secrets` folder:
+### Optional: Generate JWT
+A JWT secret file should be used to ensure secure communication between the Execution Client (Reth) and the Consensus client (Lighthouse). This step is optional, if a path to an existing JWT secret file is not set in Reth, the file will be created automatically - in that case, adjust the JWT path for Lighthouse accordingly. Use the following commands, according to the [Lighhouse documentation](https://lighthouse-book.sigmaprime.io/run_a_node.html#step-1-create-a-jwt-secret-file), to manually create a JWT secret in the `/secrets` folder:
 
 ```
 sudo mkdir -p /secrets
