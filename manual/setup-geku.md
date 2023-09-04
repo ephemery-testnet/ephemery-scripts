@@ -12,6 +12,7 @@ sudo apt install -y git default-jre make gcc
 ### Download config
 
 ```
+cd ~
 mkdir testnet-all
 cd testnet-all
 ```
@@ -43,7 +44,7 @@ Refer to Geth's documentation:
 To initialise Geth with Ephemery settings, run the following:
 ```
 cd ~
-./go-ethereum/build/bin/geth init --datadir "datadir-geth" ~/testnet-all/genesis.json
+./go-ethereum/build/bin/geth init --datadir "~/datadir-geth" ~/testnet-all/genesis.json
 ```
 
 Then, to run Geth:
@@ -53,7 +54,7 @@ Then, to run Geth:
      --syncmode=full \
      --port 30303 \
      --http \
-     --datadir "datadir-geth" \
+     --datadir "~/datadir-geth" \
      --authrpc.jwtsecret=/tmp/jwtsecret \
      --bootnodes {bootnodes}
 ```
@@ -82,7 +83,7 @@ Run:
 ./teku/build/install/teku/bin/teku \
     --network ~/testnet-all/config.yaml \
     --initial-state ~/testnet-all/genesis.ssz \
-    --data-path "datadir-teku" \
+    --data-path "~/datadir-teku" \
     --ee-endpoint http://localhost:8551 \
     --ee-jwt-secret-file "/tmp/jwtsecret" \
     --log-destination console \

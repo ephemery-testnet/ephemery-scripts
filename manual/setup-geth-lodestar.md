@@ -14,6 +14,7 @@ sudo apt install -y git default-jre make gcc
 ### Download config
 
 ```
+cd ~
 mkdir testnet-all
 cd testnet-all
 ```
@@ -46,7 +47,7 @@ Refer to Geth's documentation:
 To initialise Geth with Ephemery settings, run the following:
 ```
 cd ~
-./go-ethereum/build/bin/geth init --datadir "datadir-geth" ~/testnet-all/genesis.json
+./go-ethereum/build/bin/geth init --datadir "~/datadir-geth" ~/testnet-all/genesis.json
 ```
 
 Then, to run Geth:
@@ -56,7 +57,7 @@ Then, to run Geth:
      --syncmode=full \
      --port 30303 \
      --http \
-     --datadir "datadir-geth" \
+     --datadir "~/datadir-geth" \
      --authrpc.jwtsecret=/tmp/jwtsecret \
      --bootnodes {bootnodes}
 ```
@@ -86,7 +87,7 @@ yarn run build
 Run:
 ```
 ./lodestar beacon \
-    --dataDir="datadir-lodestar" \
+    --dataDir="~/datadir-lodestar" \
     --paramsFile=~/testnet-all/config.yaml \
     --genesisStateFile=~/testnet-all/genesis.ssz \
     --eth1.depositContractDeployBlock=0 \
