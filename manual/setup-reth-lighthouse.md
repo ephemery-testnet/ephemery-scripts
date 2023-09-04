@@ -45,7 +45,7 @@ See Reth documentation for installation instructions:
 Use the following command to initialize the databaze from the Ephemery genesis file:
 ```
 cd ~
-reth init --datadir "datadir-reth" --chain "~/testnet-all/genesis.json"
+reth init --datadir "~/datadir-reth" --chain "~/testnet-all/genesis.json"
 ```
 
 Afterwards, use the following command to run Reth: 
@@ -56,7 +56,7 @@ Afterwards, use the following command to run Reth:
     --full \
     --port 30303 \
     --http \
-    --datadir "datadir-reth" \
+    --datadir "~/datadir-reth" \
     --authrpc.jwtsecret "/secrets/jwt.hex" \
     --bootnodes {bootnodes}
 ```
@@ -79,8 +79,8 @@ See Lighthouse documentation for installation instructions:
 Run:
 ```
 lighthouse beacon_node \
-    --testnet-dir "testnet-all" \
-    --datadir "datadir-lighthouse" \
+    --testnet-dir "~/testnet-all" \
+    --datadir "~/datadir-lighthouse" \
     --eth1 \
     --execution-jwt "/secrets/jwt.hex" \
     --execution-endpoint http://localhost:8551 \
