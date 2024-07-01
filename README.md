@@ -16,7 +16,7 @@ By default, the script is controlling clients using their systemd services. You 
 
 This repository also includes configuration files for `cloud-init`. These provide many deployment options for various client combinations and also explorers. 
 
-### Docker
+### Docker compose
 
 Another deployment option is using `docker-compose` setup. This is a simple option to run a node which always follows the current chain. 
 
@@ -24,12 +24,23 @@ Just ensure that [Docker](https://docs.docker.com/engine/install/) and [docker-c
 
 ```
 git clone https://github.com/pk910/test-testnet-scripts.git
-cd test-testnet-scripts/Docker
+cd test-testnet-scripts/docker-compose
 docker-compose up
 ```
 Currently it only includes single client pair with automatic restart and needs more work. Feel free to extend it with other options. 
 
+### Docker images (with ephemery wrapper)
+
+There are automatically build customized client images for all major ethereum clients available via the [ephemery-client-wrapper](https://github.com/pk910/ephemery-client-wrapper) repository.
+
+The repository takes the original client images and injects a wrapper script that takes care of the ephemery related things (reset mechanism & client flags). The images are meant to be drop-in replacements for the official images, so they should be fully compatible with any setup that uses the official client images.
+
+See the list of client images & example docker commands in the [README.md](https://github.com/pk910/ephemery-client-wrapper/blob/main/README.md#clients).
+You can also take a look into the example scripts in [docker-example](./docker-example)
+
 ### Kubernetes helm charts
+
+For deployments to a kubernetes cluster, you can find an example helm chart in the [charts](./charts) folder.
 
 Currently only the geth-lighthouse client pair is supported, retention is automated via a Kubernetes CronJob.
 
