@@ -24,8 +24,8 @@ users:
     uid: "1000"
     ssh-authorized-keys:
       - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCaGa3CFThBknOqAWqn8G4qHcl/U1Lm9CUjZ+zG+CxnBDT6K6CVgHkjEHru7gkrP7LrDKQI7JPPPSO/+ozUWcCoBomjzZ4w2inelUverCRHe2iZBSP9RNqVRc4p2F3NIiOblzYUiXYdXu1I0zFNe4jvkjTtlZ6gb8PiDqUmMs4hRWfIG88ahhwHnBeqEECK0TNra4h4n6wq0rvkGj21xSH0CXw4X6O2a5tdARbAsrMA1pQISX4AKniHcMCAo+gqobXHeN2sP2JMq8SrszjkzH/Xj/vMtBe/iD+eCexPVXRfkMrxtZxseazkJDTB6E6DVoNOZPfqs4RyjE8MahWh3UI/ pk910_root
-  - name: etherum
-    home: /home/etherum
+  - name: ethereum
+    home: /home/ethereum
     shell: /bin/bash
     uid: "1001"
   - name: blockscout
@@ -43,13 +43,13 @@ write_files:
   - path: /etc/sudoers.d/pk910
     content: |
       pk910    ALL=(ALL) NOPASSWD: ALL
-  - path: /etc/sudoers.d/etherum
+  - path: /etc/sudoers.d/ethereum
     content: |
       # Cmnd alias specification
       Cmnd_Alias ETH_CMDS = /bin/systemctl stop geth, /bin/systemctl start geth, /bin/systemctl stop beacon-chain, /bin/systemctl start beacon-chain, /bin/systemctl stop validator, /bin/systemctl start validator, /bin/systemctl stop boot-node, /bin/systemctl start boot-node, /home/blockscout/start.sh, /home/blockscout/stop.sh, /home/blockscout/reset.sh, /root/reset-blockscout-db.sh, /home/beaconchain/start.sh, /home/beaconchain/stop.sh, /home/beaconchain/reset.sh, /root/reset-beaconchain-db.sh
 
       # User privilege specification
-      etherum    ALL=(ALL) NOPASSWD: ETH_CMDS
+      ethereum    ALL=(ALL) NOPASSWD: ETH_CMDS
   - path: /etc/systemd/system/geth.service
     content: |
       [Unit]
@@ -58,10 +58,10 @@ write_files:
       After           = network-online.target
 
       [Service]
-      User            = etherum
-      WorkingDirectory= /home/etherum/geth
-      EnvironmentFile = /home/etherum/testnet/nodevars_env.txt
-      ExecStart       = /home/etherum/geth/bin/geth --datadir /home/etherum/data-geth --port 30303 --http --http.addr 0.0.0.0 --http.port 8545 --http.api eth,net,personal,web3,txpool,debug --ws --ws.addr 0.0.0.0 --ws.port 8546 --ws.api eth,net,personal,web3,txpool,debug --authrpc.jwtsecret=/home/etherum/jwtsecret --syncmode=full --bootnodes "${BOOTNODE_ENODE_LIST}" --networkid ${CHAIN_ID}
+      User            = ethereum
+      WorkingDirectory= /home/ethereum/geth
+      EnvironmentFile = /home/ethereum/testnet/nodevars_env.txt
+      ExecStart       = /home/ethereum/geth/bin/geth --datadir /home/ethereum/data-geth --port 30303 --http --http.addr 0.0.0.0 --http.port 8545 --http.api eth,net,personal,web3,txpool,debug --ws --ws.addr 0.0.0.0 --ws.port 8546 --ws.api eth,net,personal,web3,txpool,debug --authrpc.jwtsecret=/home/ethereum/jwtsecret --syncmode=full --bootnodes "${BOOTNODE_ENODE_LIST}" --networkid ${CHAIN_ID}
       Restart         = on-failure
 
       [Install]
@@ -74,10 +74,10 @@ write_files:
       After           = network-online.target
 
       [Service]
-      User            = etherum
-      WorkingDirectory= /home/etherum/lighthouse
-      EnvironmentFile = /home/etherum/testnet/nodevars_env.txt
-      ExecStart       = /home/etherum/lighthouse/lighthouse bn --testnet-dir /home/etherum/testnet --datadir /home/etherum/data-lh --staking --metrics --port 9010 --http-address 0.0.0.0 --metrics-address 0.0.0.0 --execution-endpoint http://127.0.0.1:8551 --execution-jwt="/home/etherum/jwtsecret" --boot-nodes ${BOOTNODE_ENR_LIST}
+      User            = ethereum
+      WorkingDirectory= /home/ethereum/lighthouse
+      EnvironmentFile = /home/ethereum/testnet/nodevars_env.txt
+      ExecStart       = /home/ethereum/lighthouse/lighthouse bn --testnet-dir /home/ethereum/testnet --datadir /home/ethereum/data-lh --staking --metrics --port 9010 --http-address 0.0.0.0 --metrics-address 0.0.0.0 --execution-endpoint http://127.0.0.1:8551 --execution-jwt="/home/ethereum/jwtsecret" --boot-nodes ${BOOTNODE_ENR_LIST}
       Restart         = on-failure
 
       [Install]
@@ -90,9 +90,9 @@ write_files:
       After           = network-online.target
 
       [Service]
-      User            = etherum
-      WorkingDirectory= /home/etherum/lighthouse
-      ExecStart       = /home/etherum/lighthouse/lighthouse vc --testnet-dir /home/etherum/testnet --datadir /home/etherum/data-lh --beacon-nodes "http://localhost:5052" --graffiti "pk910 (2)" --suggested-fee-recipient 0x14627ea0e2B27b817DbfF94c3dA383bB73F8C30b --init-slashing-protection --allow-unsynced
+      User            = ethereum
+      WorkingDirectory= /home/ethereum/lighthouse
+      ExecStart       = /home/ethereum/lighthouse/lighthouse vc --testnet-dir /home/ethereum/testnet --datadir /home/ethereum/data-lh --beacon-nodes "http://localhost:5052" --graffiti "pk910 (2)" --suggested-fee-recipient 0x14627ea0e2B27b817DbfF94c3dA383bB73F8C30b --init-slashing-protection --allow-unsynced
       Restart         = on-failure
 
       [Install]
@@ -125,7 +125,7 @@ write_files:
       setup_pgsql_user beaconchain /home/beaconchain/.dbpassword.txt
       usermod -a -G docker beaconchain
 
-  - path: /home/etherum/setup.sh
+  - path: /home/ethereum/setup.sh
     content: |
       #!/bin/bash
       cd ~
@@ -142,14 +142,14 @@ write_files:
       setup_geth
       setup_lighthouse
 
-  - path: /home/etherum/retention.sh
+  - path: /home/ethereum/retention.sh
     content: |
       #!/bin/bash
 
       genesis_repository="ephemery-testnet/ephemery-genesis"
-      testnet_dir=/home/etherum/testnet
-      el_datadir=/home/etherum/data-geth
-      cl_datadir=/home/etherum/data-lh
+      testnet_dir=/home/ethereum/testnet
+      el_datadir=/home/ethereum/data-geth
+      cl_datadir=/home/ethereum/data-lh
       cl_port=5052
 
 
@@ -199,25 +199,25 @@ write_files:
       source ~/retention-lib.sh
       retention_main
 
-  - path: /home/etherum/setup-retention.sh
+  - path: /home/ethereum/setup-retention.sh
     content: |
       #!/bin/bash
-      cd /home/etherum
+      cd /home/ethereum
       chmod +x retention.sh
       wget https://raw.githubusercontent.com/ephemery-testnet/ephemery-scripts/master/resources/retention-lib.sh
       ./retention.sh
-      (2>/dev/null crontab -l ; echo "*/5 * * * * /home/etherum/retention.sh") | crontab -
-  - path: /home/etherum/setup-validators.sh
+      (2>/dev/null crontab -l ; echo "*/5 * * * * /home/ethereum/retention.sh") | crontab -
+  - path: /home/ethereum/setup-validators.sh
     content: |
       #!/bin/bash
-      cd /home/etherum
+      cd /home/ethereum
       
       # ADD YOUR VALIDATOR MNEMONIC HERE
       validator_mnemonic=""
       validator_count=100
 
       if [ ! -z "$validator_mnemonic" ]; then
-        echo $validator_mnemonic | lighthouse/lighthouse account validator recover --datadir /home/etherum/data-lh --stdin-inputs --count $validator_count
+        echo $validator_mnemonic | lighthouse/lighthouse account validator recover --datadir /home/ethereum/data-lh --stdin-inputs --count $validator_count
       fi
 
   - path: /home/blockscout/setup.sh
@@ -237,7 +237,7 @@ write_files:
 
       docker run -d --restart unless-stopped --name=el_explorer \
         --env-file ~/data-explorer/blockscout.env -p 3334:4000 \
-        -v /home/etherum/testnet:/custom_config_data \
+        -v /home/ethereum/testnet:/custom_config_data \
         -v $(pwd)/data-explorer:/data \
         -it 'skylenet/blockscout:v4.1.5-beta' \
         sh -c "echo $DATABASE_URL && mix do ecto.create, ecto.migrate && exec mix phx.server"
@@ -253,7 +253,7 @@ write_files:
     content: |
       #!/bin/bash
       cd /home/blockscout
-      source /home/etherum/testnet/nodevars_env.txt
+      source /home/ethereum/testnet/nodevars_env.txt
 
       export DATABASE_PASSWORD=$(cat ./.dbpassword.txt | tr -d " \n")
       export ITERATION_NUMBER=$ITERATION_NUMBER
@@ -278,7 +278,7 @@ write_files:
 
       docker run -d --restart unless-stopped --name=cl_explorer \
         -p 3333:3333 \
-        -v /home/etherum/testnet:/config_testnet \
+        -v /home/ethereum/testnet:/config_testnet \
         -v /home/beaconchain/data-explorer:/config \
         -it 'parithoshj/beacon-explorer:print-chain-id' \
         ./explorer --config /config/config.yaml
@@ -301,37 +301,37 @@ write_files:
 
       # generate explorer configuration
       export DB_PASSWORD=$(cat ./.dbpassword.txt | tr -d " \n")
-      source /home/etherum/testnet/nodevars_env.txt
+      source /home/ethereum/testnet/nodevars_env.txt
 
-      cl_config=/home/etherum/testnet/config.yaml
+      cl_config=/home/ethereum/testnet/config.yaml
       genesis_time=$(cat $cl_config | grep "MIN_GENESIS_TIME" | sed 's/^.*: \(.*\)$/\1/')
       genesis_delay=$(cat $cl_config | grep "GENESIS_DELAY" | sed 's/^.*: \(.*\)$/\1/')
       export GENESIS_TIMESTAMP=$(expr $genesis_time + $genesis_delay)
       export MIN_GENESIS_VALIDATORS=$(cat $cl_config | grep "MIN_GENESIS_ACTIVE_VALIDATOR_COUNT" | sed 's/^.*: \(.*\)$/\1/')
       export ITERATION_NUMBER=$ITERATION_NUMBER
 
-      export DEPOSIT_CONTRACT_ADDR=$(cat /home/etherum/testnet/deposit_contract.txt | tr -d " \n")
-      export DEPOSIT_CONTRACT_BLOCK=$(cat /home/etherum/testnet/deploy_block.txt | tr -d " \n")
+      export DEPOSIT_CONTRACT_ADDR=$(cat /home/ethereum/testnet/deposit_contract.txt | tr -d " \n")
+      export DEPOSIT_CONTRACT_BLOCK=$(cat /home/ethereum/testnet/deploy_block.txt | tr -d " \n")
 
       envsubst < ./explorer-config.yaml > ./data-explorer/config.yaml
 
 runcmd:
   - [ chmod, +x, /root/setup.sh ]
   - [ /root/setup.sh ]
-  - [ chown, -R, "etherum:etherum", /home/etherum ]
+  - [ chown, -R, "ethereum:ethereum", /home/ethereum ]
   - [ chown, -R, "blockscout:blockscout", /home/blockscout ]
   - [ chown, -R, "beaconchain:beaconchain", /home/beaconchain ]
-  - [ chmod, +x, /home/etherum/setup.sh ]
-  - [ sudo, -u, etherum, /home/etherum/setup.sh ]
+  - [ chmod, +x, /home/ethereum/setup.sh ]
+  - [ sudo, -u, ethereum, /home/ethereum/setup.sh ]
   - [ systemctl, daemon-reload ]
   - [ systemctl, enable, geth.service ]
   - [ systemctl, enable, beacon-chain.service ]
   - [ systemctl, enable, validator.service ]
-  - [ chmod, +x, /home/etherum/setup-validators.sh ]
-  - [ sudo, -u, etherum, /home/etherum/setup-validators.sh ]
+  - [ chmod, +x, /home/ethereum/setup-validators.sh ]
+  - [ sudo, -u, ethereum, /home/ethereum/setup-validators.sh ]
   - [ chmod, +x, /home/blockscout/setup.sh ]
   - [ sudo, -u, blockscout, /home/blockscout/setup.sh ]
   - [ chmod, +x, /home/beaconchain/setup.sh ]
   - [ sudo, -u, beaconchain, /home/beaconchain/setup.sh ]
-  - [ chmod, +x, /home/etherum/setup-retention.sh ]
-  - [ sudo, -u, etherum, /home/etherum/setup-retention.sh ]
+  - [ chmod, +x, /home/ethereum/setup-retention.sh ]
+  - [ sudo, -u, ethereum, /home/ethereum/setup-retention.sh ]

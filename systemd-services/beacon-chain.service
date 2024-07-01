@@ -4,10 +4,10 @@ Wants           = network-online.target
 After           = network-online.target
 
 [Service]
-User            = etherum
-WorkingDirectory= /home/etherum/lighthouse
-EnvironmentFile = /home/etherum/testnet/nodevars_env.txt
-ExecStart       = /home/etherum/lighthouse/lighthouse bn --testnet-dir /home/etherum/testnet --datadir /home/etherum/data-lh --staking --metrics --port 9010 --http-address 0.0.0.0 --metrics-address 0.0.0.0 --execution-endpoint http://127.0.0.1:8551 --execution-jwt="/home/etherum/jwtsecret" --boot-nodes ${BOOTNODE_ENR_LIST}
+User            = ethereum
+WorkingDirectory= /home/ethereum/lighthouse
+EnvironmentFile = /home/ethereum/testnet/nodevars_env.txt
+ExecStart       = /home/ethereum/lighthouse/lighthouse bn --testnet-dir /home/ethereum/testnet --datadir /home/ethereum/data-lh --staking --metrics --port 9010 --http-address 0.0.0.0 --metrics-address 0.0.0.0 --execution-endpoint http://127.0.0.1:8551 --execution-jwt="/home/ethereum/jwtsecret" --boot-nodes ${BOOTNODE_ENR_LIST}
 Restart         = on-failure
 
 [Install]

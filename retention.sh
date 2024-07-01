@@ -1,9 +1,9 @@
 #!/bin/bash
 
 genesis_repository="ephemery-testnet/ephemery-genesis"
-testnet_dir=/home/etherum/testnet
-el_datadir=/home/etherum/data-geth
-cl_datadir=/home/etherum/data-lh
+testnet_dir=/home/ethereum/testnet
+el_datadir=/home/ethereum/data-geth
+cl_datadir=/home/ethereum/data-lh
 cl_port=5052
 
 
