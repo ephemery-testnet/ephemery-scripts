@@ -1,0 +1,49 @@
+version: '3'
+
+services:
+  el_reth:
+    container_name: reth
+    image: pk910/ephemery-reth:latest
+    restart: unless-stopped
+    volumes:
+      - ./reth-data:/data/
+      - ./config:/config
+      - ./jwtsecret:/execution-auth.jwt:ro
+    command: >
+      node --datadir=/data --config /data/reth-conf.toml --http --http.addr=0.0.0.0 --http.port=8545
+      --authrpc.addr=0.0.0.0 --authrpc.port=8551 --authrpc.jwtsecret=/execution-auth.jwt
+      --chain=/ephemery_config/genesis.json
+    network_mode: "host"
+
+  cl_nimbus:
+    container_name: nimbus
+    image: pk910/ephemery-nimbus:latest
+    restart: unless-stopped
+    volumes:
+      - ./nimbus-data:/data/
+      - ./config:/config
+      - ./jwtsecret:/execution-auth.jwt:ro
+    command: >
+      nimbus_beacon_node --data-dir=/data --web3-url=http://localhost:8545 
+      --jwt-secret=/execution-auth.jwt --network=/ephemery_config --bootstrap-node=${BOOTNODE_ENR_LIST}
+    network_mode: "host"
+
+  reset:
+    container_name: resetter
+    image: debian
+    build:
+      context: ./retention
+      dockerfile: ./Dockerfile
+    volumes:
+      - ./:/data
+      - ./testnet:/testnet
+      - /var/run/docker.sock:/var/run/docker.sock:ro 
+    environment:
+      - hostdir=$PWD
+    network_mode: "host"
+    depends_on:
+      - el_reth
+      - cl_nimbus
+
+volumes:
+  config:
