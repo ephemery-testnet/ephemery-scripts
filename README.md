@@ -6,7 +6,26 @@ Running a node in this test network requires resetting clients with a new genesi
 
 ## Retention script
 
-Script `retention.sh` provides the main mechanism for resetting the network. It checks for period timeout and resets the node automatically. Make sure to read the script first, modify variables and paths to match your setup. 
+Script `retention.sh` provides the main mechanism for resetting the network. It checks for period timeout and resets the node automatically. Configure your script using a file containing the following environment variables, and pass that file as the first argument to `retention.sh`.
+
+- TESTNET_DIR - Path to the directory in which Ephemery testnet files are stored
+- EL_CLIENT - Type of execution client, lower case: geth, nethermind, besu, erigon, or reth
+- EL_SERVICE - Name of the execution client systemd service to start/stop
+- EL_DATADIR - Data directory of the execution client
+- CL_CLIENT - Type of consensus client, lower case: prysm, lighthouse, nimbus, teku or lodestar
+- CL_SERVICE - Name of the consensus client systemd service to start/stop
+- CL_DATADIR - Data directory of consensus client
+- CL_PORT - JSON RPC port of consensus client. Default: `3500`
+- VC_CLIENT - **Optional:** Type of validator client, lower case: prysm, lighthouse, nimbus, teku or lodestar. Leave unset if using single-process consensus/validator client.
+- VC_SERVICE - **Optional:** Name of the validator client systemd service to start/stop. Leave unset if using single-process consensus/validator client.
+- VC_DATADIR - **Optional:** Data directory of validator client. Leave unset if using single-process consensus/validator client.
+- EPHEMERY_FILES_USER - **Optional:** User to which Ephemery testnet directory and files should be assigned. By default file ownership will be left unchanged.
+- EPHEMERY_FILES_GROUP - **Optional:** Group to which Ephemery testnet directory and files should be assigned. By default the group will be left unchanged.
+- FORCE_RESET - **Optional:** Set to `1` to force reset of testnet files and clients for testing purposes. Default: `0`
+
+See `.env.sample` for an example of setting the environment variables. Run `retention.sh .env` to use values set in `.env` environment variables file.
+
+Default values for all environment variables may also be set within the script and the script can be run as `retention.sh`.
 
 By default, the script is controlling clients using their systemd services. You can find examples files for services in `systemd-services` directory, you should also modify them to suit your system.
 
