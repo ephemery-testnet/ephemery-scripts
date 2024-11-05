@@ -69,6 +69,21 @@ ephemery_files_group=${EPHEMERY_FILES_GROUP:-$default_ephemery_files_group}
 # Set FORCE_RESET environment variable to 1 test reset
 force_reset="${FORCE_RESET:-0}"
 
+# Collect missing variables into an array
+missing_vars=()
+for var_name in "testnet_dir" "el_client" "el_service" "el_datadir" \
+                "cl_client" "cl_service" "cl_datadir"; do
+  if [[ -z "${!var_name}" ]]; then
+    missing_vars+=("$var_name")
+  fi
+done
+
+# Exit if any required variables are missing
+if [[ ${#missing_vars[@]} -gt 0 ]]; then
+  log "Error: The following required variables are missing or empty: ${missing_vars[*]}"
+  exit 1
+fi
+
 start_clients() {
   # start clients
   log "Starting $cl_service and $el_service services"
@@ -173,8 +188,10 @@ clear_consensus_datadir() {
       ;;
 
     "nimbus")
-      rm -rf "$cl_datadir"/*
-      log "Deleted contents of $cl_datadir data directory for $cl_client consensus client"
+      if [ -d "$cl_datadir" ]; then
+        rm -rf "$cl_datadir"/*
+        log "Deleted contents of $cl_datadir data directory for $cl_client consensus client"
+      fi
 
       # Delete validators/slashing_protection.sqlite3
       # Captures validator requirements if using single process
@@ -185,8 +202,10 @@ clear_consensus_datadir() {
       ;;
 
     "prysm")
-      rm -rf "$cl_datadir"/*
-      log "Deleted contents of $cl_datadir data directory for $cl_client consensus client"
+      if [ -d "$cl_datadir" ]; then
+        rm -rf "$cl_datadir"/*
+        log "Deleted contents of $cl_datadir data directory for $cl_client consensus client"
+      fi
 
       # Delete prysm-wallet-v2/direct/validator.db
       # Captures validator requirements if using single process
