@@ -315,10 +315,22 @@ reset_testnet() {
 
 check_testnet() {
   current_time=$(date +%s)
-  genesis_time=$(curl -s http://127.0.0.1:$cl_port/eth/v1/beacon/genesis | sed 's/.*"genesis_time":"\{0,1\}\([^,"]*\)"\{0,1\}.*/\1/')
-  if ! [ $genesis_time -gt 0 ]; then
-    log "Could not get genesis time from beacon node"
-    return 0
+
+  genesis_time=$(curl -s --fail http://127.0.0.1:$cl_port/eth/v1/beacon/genesis | sed 's/.*"genesis_time":"\{0,1\}\([^,"]*\)"\{0,1\}.*/\1/')
+
+  if [ $? -ne 0 ] || [ -z "$genesis_time" ]; then
+    log "Failed to retrieve genesis time from beacon node or empty response."
+    return 1
+  fi
+
+  if ! [[ "$genesis_time" =~ ^[0-9]+$ ]]; then
+    log "Invalid genesis time format: '$genesis_time'"
+    return 1
+  fi
+
+  if [ "$genesis_time" -le 0 ]; then
+    log "Genesis time is not greater than 0, received: $genesis_time"
+    return 1
   fi
 
   if ! [ -f $testnet_dir/retention.vars ]; then
@@ -328,7 +340,7 @@ check_testnet() {
   source $testnet_dir/retention.vars
 
   testnet_timeout=$(expr $genesis_time + $GENESIS_RESET_INTERVAL - $timeout_window)
-  log "Genesis timeout: $(expr $testnet_timeout - $current_time) sec (timeout at $(date -d @$testnet_timeout '+%Y-%m-%d %H:%M:%S'))"
+  log "Genesis timeout: $(expr $testnet_timeout - $current_time) sec ($(date -d @$testnet_timeout '+%Y-%m-%d %H:%M:%S'))"
   if [ $testnet_timeout -le $current_time ]; then
     genesis_release=$(get_github_release $genesis_repository)
     if ! [ $ITERATION_RELEASE ]; then
