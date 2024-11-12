@@ -1,5 +1,41 @@
 #!/bin/bash
 
+# The following variables may be defined as standard environment variables or
+# may be defined in a file that is passed as the first argument to this
+# script. You may also simple set your desired values as the "default_" values
+# in the code below.
+#
+# TESTNET_DIR - Required: Directory containing testnet configuration files
+# EL_CLIENT - Required: Lowercase name of execution client (i.e. besu, erigon,
+#           geth, nethermind, reth)
+# EL_SERVICE - Required: The name of the systemd service to start/stop the
+#           execution client
+# EL_DATADIR - Required: The data directory of the execution client
+# EL_USER - Optional: The user as which the execution client runs. Required for
+#           genesis initialization for some execution client. If left blank,
+#           the genesis initialization will run as the same user the script
+#           is running as.
+# CL_CLIENT - Required: Lowercase name of consensus client (i.e. prysm, teku,
+#           lodestar, nimbus, lighthouse)
+# CL_SERVICE - Required: The name of the systemd service to start/stop the
+#           consensus client
+# CL_DATADIR - Required: The data directory of the consensus client
+# CL_PORT - Optional: HTTP REST port for consensus client. Defaults to 3500
+# VC_CLIENT - Optional: Lowercase name of the validator client (i.e. prysm,
+#           teku, lodestar, nimbus, lighthouse). Leave blank if using single-
+#           process consensus/validator client.
+# VC_SERVICE - Optional: The name of the systemd service to start/stop the
+#           validator client. Leave blank if using a single-process 
+#           consensus/validator client.
+# VC_DATADIR - Optional: The data directory of the validator client. Leave
+#           blank if using a single-process consensus/validator client.
+# TESTNET_FILES_USER - Optional: The user that should own the testnet files.
+#           If left blank, the testnet files will be owned by the same user
+#           the script is running as.
+# TESTNET_FILES_GROUP - Optional: The group that the testnet files should
+#           belong to. If left blank, the testnet files will belong to the
+#           same group the script is running as.
+
 log() {
   echo "$(date '+%Y-%m-%d %H:%M:%S') - $1"
 }
@@ -30,6 +66,7 @@ default_testnet_dir=
 default_el_client=
 default_el_service=
 default_el_datadir=
+default_el_user=
 
 # consensus
 default_cl_client=
@@ -42,9 +79,9 @@ default_vc_client=
 default_vc_service=
 default_vc_datadir=
 
-# Ephemery Ownership
-default_ephemery_files_user=
-default_ephemery_files_group=
+# Testnet Files Ownership
+default_testnet_files_user=
+default_testnet_files_group=
 
 ## Read environment variables, if present
 
@@ -53,6 +90,7 @@ testnet_dir=${TESTNET_DIR:-$default_testnet_dir}
 el_client=${EL_CLIENT:-$default_el_client}
 el_service=${EL_SERVICE:-$default_el_service}
 el_datadir=${EL_DATADIR:-$default_el_datadir}
+el_user=${EL_USER:-$default_el_user}
 
 cl_client=${CL_CLIENT:-$default_cl_client}
 cl_service=${CL_SERVICE:-$default_cl_service}
@@ -63,96 +101,125 @@ vc_client=${VC_CLIENT:-$default_vc_client}
 vc_service=${VC_SERVICE:-$default_vc_service}
 vc_datadir=${VC_DATADIR:-$default_vc_datadir}
 
-ephemery_files_user=${EPHEMERY_FILES_USER:-$default_ephemery_files_user}
-ephemery_files_group=${EPHEMERY_FILES_GROUP:-$default_ephemery_files_group}
+testnet_files_user=${TESTNET_FILES_USER:-$default_testnet_files_user}
+testnet_files_group=${TESTNET_FILES_GROUP:-$default_testnet_files_group}
 
 # Set FORCE_RESET environment variable to 1 test reset
 force_reset="${FORCE_RESET:-0}"
 
-# Collect missing variables into an array
-missing_vars=()
-for var_name in "testnet_dir" "el_client" "el_service" "el_datadir" \
-                "cl_client" "cl_service" "cl_datadir"; do
-  if [[ -z "${!var_name}" ]]; then
-    missing_vars+=("$var_name")
-  fi
-done
-
-# Exit if any required variables are missing
-if [[ ${#missing_vars[@]} -gt 0 ]]; then
-  log "Error: The following required variables are missing or empty: ${missing_vars[*]}"
-  exit 1
-fi
-
 start_clients() {
-  # start clients
-  log "Starting $cl_service and $el_service services"
-  /bin/systemctl start $cl_service
-  /bin/systemctl start $el_service
+  
+  # Build and execute the systemctl command for cl_service
+  if [ -n "$cl_service" ]; then
+    log "Starting $cl_service systemd service"
+    cmd=("/bin/systemctl" "start" "$cl_service")
+    "${cmd[@]}"
+  fi
+  
+  # Build and execute the systemctl command for el_service
+  if [ -n "$el_service" ]; then
+    log "Starting $el_service systemd service"
+    cmd=("/bin/systemctl" "start" "$el_service")
+    "${cmd[@]}"
+  fi
 
+  # Conditionally start the validator client service if defined
   if [ -n "$vc_service" ]; then
-    log "Starting $vc_service service"
-    /bin/systemctl start $vc_service
+    log "Starting $vc_service systemd service"
+    cmd=("/bin/systemctl" "start" "$vc_service")
+    "${cmd[@]}"
   fi
 }
 
 stop_clients() {
-  # stop clients
-  log "Stopping $cl_service and $el_service systemd services"
-  /bin/systemctl stop $cl_service
-  /bin/systemctl stop $el_service
 
+  # Build and execute the systemctl command for cl_service
+  if [ -n "$cl_service" ]; then
+    log "Stopping $cl_service systemd service"
+    cmd=("/bin/systemctl" "stop" "$cl_service")
+    "${cmd[@]}"
+  fi
+
+  # Build and execute the systemctl command for el_service
+  if [ -n "$el_service" ]; then
+    log "Stopping $el_service systemd service"
+    cmd=("/bin/systemctl" "stop" "$el_service")
+    "${cmd[@]}"
+  fi
+
+  # Conditionally stop the validator client service if defined
   if [ -n "$vc_service" ]; then
-    log "Stopping $vc_service service"
-    /bin/systemctl stop $vc_service
+    log "Stopping $vc_service systemd service"
+    cmd=("/bin/systemctl" "stop" "$vc_service")
+    "${cmd[@]}"
   fi
 }
 
 clear_execution_datadir() {
+  # Ensure $el_datadir is a valid directory before proceeding
+  if [ -z "$el_datadir" ] || [ ! -d "$el_datadir" ]; then
+    log "Execution data directory $el_datadir is invalid or does not exist."
+    return 1
+  fi
+
   case "$el_client" in
     "geth")
-      # Delete everything in $cl_datadir/geth/* except for nodekey
+      # Delete everything in $el_datadir/geth/* except for nodekey
       if [ -d "$el_datadir/geth" ]; then
-        find "$el_datadir/geth" -mindepth 1 -maxdepth 1 ! -name 'nodekey' -exec rm -rf {} +
+        find_cmd=("find" "$el_datadir/geth" "-mindepth" "1" "-maxdepth" "1" "!" "-name" "nodekey" "-exec" "rm" "-rf" "{}" "+")
+        "${find_cmd[@]}"
         log "Retained nodekey file in $el_datadir and deleted other contents for $el_client execution client"
       fi
       ;;
 
     "erigon")
+      # Delete everything in $el_datadir except for config.json and customGenesis.json
       if [ -d "$el_datadir" ]; then
-        find "$el_datadir" ! -name 'config.json' ! -name 'customGenesis.json' -type f -delete
+        find_cmd=("find" "$el_datadir" "!" "-name" "config.json" "!" "-name" "customGenesis.json" "-type" "f" "-delete")
+        "${find_cmd[@]}"
         log "Retained config.json and customGenesis.json files in $el_datadir and deleted other contents for $el_client execution client"
       fi
       ;;
 
     *)
+      # Delete everything in $el_datadir for other clients
       if [ -d "$el_datadir" ]; then
-        rm -rf "$el_datadir"/*
+        rm_cmd=("rm" "-rf" "$el_datadir"/*)
+        "${rm_cmd[@]}"
         log "Deleted contents of $el_datadir/ for $el_client execution client"
       fi
       ;;
   esac
 }
 
+
 clear_consensus_datadir() {
+  # Ensure $cl_datadir is a valid directory before proceeding
+  if [ -z "$cl_datadir" ] || [ ! -d "$cl_datadir" ]; then
+    log "Consensus data directory '$cl_datadir' is invalid or does not exist."
+    return 1
+  fi
+
   case "$cl_client" in
     "teku")
       # Delete everything in $cl_datadir/beacon/* except for kvstore
       if [ -d "$cl_datadir/beacon" ]; then
-        find "$cl_datadir/beacon" -mindepth 1 -maxdepth 1 ! -name 'kvstore' -exec rm -rf {} +
+        find_cmd=("find" "$cl_datadir/beacon" "-mindepth" "1" "-maxdepth" "1" "!" "-name" "kvstore" "-exec" "rm" "-rf" "{}" "+")
+        "${find_cmd[@]}"
         log "Retained kvstore file in $cl_datadir/beacon and deleted other contents for $cl_client consensus client"
       fi
 
-      # Delete logs if present
+      # Clear logs directory
       if [ -d "$cl_datadir/logs" ]; then
-        rm -rf "$cl_datadir/logs"/*
+        rm_cmd=("rm" "-rf" "$cl_datadir/logs"/*)
+        "${rm_cmd[@]}"
         log "Deleted contents of $cl_datadir/logs for $cl_client consensus client"
       fi
 
-      # Delete slashprotection/slashprotection.sqlite if present
-      # Captures validator requirements if using single process
+      # Delete slashprotection.sqlite if present
       if [ -f "$cl_datadir/slashprotection/slashprotection.sqlite" ]; then
-        rm -rf "$cl_datadir/slashprotection/slashprotection.sqlite"
+        rm_cmd=("rm" "-rf" "$cl_datadir/slashprotection/slashprotection.sqlite")
+        "${rm_cmd[@]}"
         log "Deleted $cl_datadir/slashprotection/slashprotection.sqlite for $cl_client consensus client"
       fi
       ;;
@@ -160,90 +227,108 @@ clear_consensus_datadir() {
     "lighthouse")
       # Delete everything in $cl_datadir/beacon/* except for network
       if [ -d "$cl_datadir/beacon" ]; then
-        find "$cl_datadir/beacon" -mindepth 1 -maxdepth 1 ! -name 'network' -exec rm -rf {} +
+        find_cmd=("find" "$cl_datadir/beacon" "-mindepth" "1" "-maxdepth" "1" "!" "-name" "network" "-exec" "rm" "-rf" "{}" "+")
+        "${find_cmd[@]}"
         log "Retained network file in $cl_datadir/beacon and deleted other contents for $cl_client consensus client"
       fi
 
-      # Delete keys/slashing_protection.sqlite
-      # Captures validator requirements if using single process
-      if [ -f $cl_datadir/keys/slashing_protection.sqlite ]; then
-        rm -rf $cl_datadir/keys/slashing_protection.sqlite
-        log "Deleted contents of $cl_datadir/keys/slashing_protection.sqlite for $cl_client consensus client"
+      # Clear slashing_protection.sqlite
+      if [ -f "$cl_datadir/keys/slashing_protection.sqlite" ]; then
+        rm_cmd=("rm" "-rf" "$cl_datadir/keys/slashing_protection.sqlite")
+        "${rm_cmd[@]}"
+        log "Deleted $cl_datadir/keys/slashing_protection.sqlite for $cl_client consensus client"
       fi
       ;;
 
     "lodestar")
-      # Delete chaindb if present
+      # Delete chain-db if present
       if [ -d "$cl_datadir/chain-db" ]; then
-        rm -rf "$cl_datadir/chain-db"/*
+        rm_cmd=("rm" "-rf" "$cl_datadir/chain-db"/*)
+        "${rm_cmd[@]}"
         log "Deleted contents of $cl_datadir/chain-db for $cl_client consensus client"
       fi
 
-      # Delete validator-db directory if present
-      # Captures validator requirements if using single process
+      # Delete validator-db if present
       if [ -d "$cl_datadir/validator-db" ]; then
-        rm -rf "$cl_datadir/validator-db"/*
+        rm_cmd=("rm" "-rf" "$cl_datadir/validator-db"/*)
+        "${rm_cmd[@]}"
         log "Deleted contents of $cl_datadir/validator-db for $cl_client consensus client"
       fi
       ;;
 
     "nimbus")
+      # Clear all contents in $cl_datadir
       if [ -d "$cl_datadir" ]; then
-        rm -rf "$cl_datadir"/*
+        rm_cmd=("rm" "-rf" "$cl_datadir"/*)
+        "${rm_cmd[@]}"
         log "Deleted contents of $cl_datadir data directory for $cl_client consensus client"
       fi
 
-      # Delete validators/slashing_protection.sqlite3
-      # Captures validator requirements if using single process
-      if [ -f $vc_datadir/validators/slashing_protection.sqlite3 ]; then
-        rm -rf $vc_datadir/validators/slashing_protection.sqlite3
+      # Clear slashing_protection.sqlite3
+      if [ -f "$vc_datadir/validators/slashing_protection.sqlite3" ]; then
+        rm_cmd=("rm" "-rf" "$vc_datadir/validators/slashing_protection.sqlite3")
+        "${rm_cmd[@]}"
         log "Deleted $vc_datadir/validators/slashing_protection.sqlite3 for $cl_client consensus client"
       fi
       ;;
 
     "prysm")
+      # Clear all contents in $cl_datadir
       if [ -d "$cl_datadir" ]; then
-        rm -rf "$cl_datadir"/*
+        rm_cmd=("rm" "-rf" "$cl_datadir"/*)
+        "${rm_cmd[@]}"
         log "Deleted contents of $cl_datadir data directory for $cl_client consensus client"
       fi
 
-      # Delete prysm-wallet-v2/direct/validator.db
-      # Captures validator requirements if using single process
-      if [ -f $vc_datadir/prysm-wallet-v2/direct/validator.db ]; then
-        rm -rf $vc_datadir/prysm-wallet-v2/direct/validator.db
+      # Clear validator.db
+      if [ -f "$vc_datadir/prysm-wallet-v2/direct/validator.db" ]; then
+        rm_cmd=("rm" "-rf" "$vc_datadir/prysm-wallet-v2/direct/validator.db")
+        "${rm_cmd[@]}"
         log "Deleted $vc_datadir/prysm-wallet-v2/direct/validator.db for $cl_client consensus client"
       fi
       ;;
   esac
 }
 
+
 clear_validator_datadir() {
-  if [ -n "$vc_service" ] && [ -n "$vc_client" ] && [ -n "$vc_datadir" ]; then
+  # Ensure $vc_datadir is a valid directory or file path before proceeding
+  if [ -z "$vc_datadir" ] || [ ! -d "$vc_datadir" ]; then
+    log "Validator data directory '$vc_datadir' is invalid or does not exist."
+    return 1
+  fi
+
+  # Only proceed if both $vc_client and $vc_service are set
+  if [ -n "$vc_service" ] && [ -n "$vc_client" ]; then
     case "$vc_client" in
       "prysm")
-        if [ -f $vc_datadir/prysm-wallet-v2/direct/validator.db ]; then
-          rm -rf $vc_datadir/prysm-wallet-v2/direct/validator.db
+        if [ -f "$vc_datadir/prysm-wallet-v2/direct/validator.db" ]; then
+          rm_cmd=("rm" "-rf" "$vc_datadir/prysm-wallet-v2/direct/validator.db")
+          "${rm_cmd[@]}"
           log "Deleted $vc_datadir/prysm-wallet-v2/direct/validator.db for $vc_client validator client"
         fi
         ;;
 
       "teku")
-        if [ -f $vc_datadir/slashprotection/slashprotection.sqlite ]; then
-          rm -rf $vc_datadir/slashprotection/slashprotection.sqlite
+        if [ -f "$vc_datadir/slashprotection/slashprotection.sqlite" ]; then
+          rm_cmd=("rm" "-rf" "$vc_datadir/slashprotection/slashprotection.sqlite")
+          "${rm_cmd[@]}"
           log "Deleted $vc_datadir/slashprotection/slashprotection.sqlite for $vc_client validator client"
         fi
         ;;
 
       "nimbus")
-        if [ -f $vc_datadir/validators/slashing_protection.sqlite3 ]; then
-          rm -rf $vc_datadir/validators/slashing_protection.sqlite3
+        if [ -f "$vc_datadir/validators/slashing_protection.sqlite3" ]; then
+          rm_cmd=("rm" "-rf" "$vc_datadir/validators/slashing_protection.sqlite3")
+          "${rm_cmd[@]}"
           log "Deleted $vc_datadir/validators/slashing_protection.sqlite3 for $vc_client validator client"
         fi
         ;;
 
       "lighthouse")
-        if [ -f $vc_datadir/keys/slashing_protection.sqlite ]; then
-          rm -rf $vc_datadir/keys/slashing_protection.sqlite
+        if [ -f "$vc_datadir/keys/slashing_protection.sqlite" ]; then
+          rm_cmd=("rm" "-rf" "$vc_datadir/keys/slashing_protection.sqlite")
+          "${rm_cmd[@]}"
           log "Deleted $vc_datadir/keys/slashing_protection.sqlite for $vc_client validator client"
         fi
         ;;
@@ -251,7 +336,8 @@ clear_validator_datadir() {
       "lodestar")
         # Delete validator-db if present
         if [ -d "$vc_datadir/validator-db" ]; then
-          rm -rf "$vc_datadir/validator-db"/*
+          rm_cmd=("rm" "-rf" "$vc_datadir/validator-db"/*)
+          "${rm_cmd[@]}"
           log "Deleted contents of $vc_datadir/validator-db/ for $vc_client validator client"
         fi
         ;;
@@ -259,49 +345,95 @@ clear_validator_datadir() {
   fi
 }
 
+
 setup_genesis() {
+  # Check for $el_user to determine if we will sudo the genesis command
+  if [[ "$el_user" =~ ^[a-zA-Z0-9_-]+$ ]] && id -u "$el_user" >/dev/null 2>&1; then
+    cmd=("sudo" "-u" "$el_user")
+  else
+    cmd=()
+  fi
+
   case "$el_client" in
     "geth")
-      log "Initializing geth genesis"
-      geth init --datadir $el_datadir $testnet_dir/genesis.json
+      if [ -z "$el_datadir" ] || [ -z "$testnet_dir" ]; then
+        log "Cannot initialize geth. Missing el_datadir or testnet_dir variable values."
+      else
+        log "Initializing geth genesis"
+        cmd+=("geth" "init" "--datadir" "$el_datadir" "$testnet_dir/genesis.json")
+        "${cmd[@]}"
+      fi
       ;;
 
     "erigon")
-      log "Initializing erigon genesis"
-      erigon init --datadir $el_datadir $testnet_dir/genesis.json
+      if [ -z "$el_datadir" ] || [ -z "$testnet_dir" ]; then
+        log "Cannot initialize geth. Missing el_datadir or testnet_dir variable values."
+      else
+        log "Initializing erigon genesis"
+        cmd+=("erigon" "init" "--datadir" "$el_datadir" "$testnet_dir/genesis.json")
+        "${cmd[@]}"
+      fi
       ;;
   esac
 }
 
+
 get_github_release() {
-  curl --silent "https://api.github.com/repos/$1/releases/latest" |
+  # Validate the repository format to allow only valid GitHub repository characters
+  local repo="$1"
+  if [[ ! "$repo" =~ ^[a-zA-Z0-9_-]+/[a-zA-Z0-9._-]+$ ]]; then
+    log "Invalid repository format: $repo"
+    return 1
+  fi
+
+  # Fetch the latest release tag
+  curl --silent "https://api.github.com/repos/$repo/releases/latest" |
     grep '"tag_name":' |
     sed -E 's/.*"([^"]+)".*/\1/' |
     head -n 1
 }
 
-download_genesis_release() {
-  genesis_release=$1
 
-  # remove old genesis
-  if [ -d $testnet_dir ]; then
-    rm -rf $testnet_dir/*
+download_genesis_release() {
+  local genesis_release="$1"
+
+  # Validate genesis release format (allowing alphanumeric, dots, hyphens, underscores)
+  if [[ ! "$genesis_release" =~ ^[a-zA-Z0-9._-]+$ ]]; then
+    log "Invalid genesis release format: $genesis_release"
+    return 1
+  fi
+
+  # Remove old genesis files
+  if [ -d "$testnet_dir" ]; then
+    rm_cmd=("rm" "-rf" "$testnet_dir"/*)
+    "${rm_cmd[@]}"
     log "Removed existing files from testnet directory $testnet_dir"
   else
-    mkdir -p $testnet_dir
+    # Use mkdir in a command array
+    mkdir_cmd=("mkdir" "-p" "$testnet_dir")
+    "${mkdir_cmd[@]}"
     log "Created testnet directory $testnet_dir"
   fi
 
-  # get latest genesis
+  # Fetch and extract the latest genesis files
   log "Getting latest genesis files and unpacking into $testnet_dir"
-  wget -qO- https://github.com/$genesis_repository/releases/download/$genesis_release/testnet-all.tar.gz | tar xvz -C $testnet_dir > /dev/null 2>&1
+  wget_cmd=("wget" "-qO-" "https://github.com/$genesis_repository/releases/download/$genesis_release/testnet-all.tar.gz")
+  tar_cmd=("tar" "xvz" "-C" "$testnet_dir")
+  "${wget_cmd[@]}" | "${tar_cmd[@]}" > /dev/null 2>&1
 
-  # Reset ephemery file ownership if we have a username and group
-  if [ -n "$ephemery_files_user" ] && [ -n "$ephemery_files_group" ]; then
-    chown -R $ephemery_files_user:$ephemery_files_group $testnet_dir
-    log "Reset ownership and group of Ephemery genesis files in $testnet_dir to $ephemery_files_user:$ephemery_files_group"
+  # Reset ownership if testnet_files_user and testnet_files_group are set and exist
+  if [[ "$testnet_files_user" =~ ^[a-zA-Z0-9_-]+$ ]] && id -u "$testnet_files_user" >/dev/null 2>&1 &&
+     [[ "$testnet_files_group" =~ ^[a-zA-Z0-9_-]+$ ]] && getent group "$testnet_files_group" >/dev/null 2>&1; then
+     
+      chown_cmd=("chown" "-R" "$testnet_files_user:$testnet_files_group" "$testnet_dir")
+      "${chown_cmd[@]}"
+      log "Reset ownership and group of testnet genesis files in $testnet_dir to $testnet_files_user:$testnet_files_group"
+  else
+      log "Invalid user or group: $testnet_files_user or $testnet_files_group does not exist"
   fi
+
 }
+
 
 reset_testnet() {
   stop_clients
@@ -313,10 +445,13 @@ reset_testnet() {
   start_clients
 }
 
+
 check_testnet() {
   current_time=$(date +%s)
 
-  genesis_time=$(curl -s --fail http://127.0.0.1:$cl_port/eth/v1/beacon/genesis | sed 's/.*"genesis_time":"\{0,1\}\([^,"]*\)"\{0,1\}.*/\1/')
+  # Use a command array for curl to retrieve genesis time
+  curl_cmd=("curl" "-s" "--fail" "http://127.0.0.1:$cl_port/eth/v1/beacon/genesis")
+  genesis_time=$("${curl_cmd[@]}" | sed 's/.*"genesis_time":"\{0,1\}\([^,"]*\)"\{0,1\}.*/\1/')
 
   if [ $? -ne 0 ] || [ -z "$genesis_time" ]; then
     log "Failed to retrieve genesis time from beacon node or empty response."
@@ -333,30 +468,49 @@ check_testnet() {
     return 1
   fi
 
-  if ! [ -f $testnet_dir/retention.vars ]; then
+  # Verify retention file exists and source it if so
+  if [ ! -f "$testnet_dir/retention.vars" ]; then
     log "Could not find retention.vars"
     return 0
   fi
-  source $testnet_dir/retention.vars
+  source "$testnet_dir/retention.vars"
 
-  testnet_timeout=$(expr $genesis_time + $GENESIS_RESET_INTERVAL - $timeout_window)
-  log "Genesis timeout: $(expr $testnet_timeout - $current_time) sec ($(date -d @$testnet_timeout '+%Y-%m-%d %H:%M:%S'))"
-  if [ $testnet_timeout -le $current_time ]; then
-    genesis_release=$(get_github_release $genesis_repository)
-    if ! [ $ITERATION_RELEASE ]; then
-      ITERATION_RELEASE=$CHAIN_ID
+  # Calculate the timeout for the testnet
+  testnet_timeout=$((genesis_time + GENESIS_RESET_INTERVAL - timeout_window))
+  log "Genesis timeout: $((testnet_timeout - current_time)) sec ($(date -d "@$testnet_timeout" '+%Y-%m-%d %H:%M:%S'))"
+
+  if [ "$testnet_timeout" -le "$current_time" ]; then
+    genesis_release=$(get_github_release "$genesis_repository")
+    if [ -z "$ITERATION_RELEASE" ]; then
+      ITERATION_RELEASE="$CHAIN_ID"
     fi
 
-    if [ $genesis_release = $ITERATION_RELEASE ]; then
+    if [ "$genesis_release" = "$ITERATION_RELEASE" ]; then
       log "Could not find new genesis release (release: $genesis_release)"
       return 0
     fi
 
-    reset_testnet $genesis_release
+    reset_testnet "$genesis_release"
   fi
 }
 
+
 main() {
+
+  # Collect missing variables into an array
+  missing_vars=()
+  for var_name in "testnet_dir" "el_client" "el_service" "el_datadir" \
+                  "cl_client" "cl_service" "cl_datadir"; do
+    if [[ -z "${!var_name}" ]]; then
+      missing_vars+=("$var_name")
+    fi
+  done
+
+  if [[ ${#missing_vars[@]} -gt 0 ]]; then
+    log "Error: The following required variables are missing or empty: ${missing_vars[*]}"
+    exit 1
+  fi
+
   if [[ "$force_reset" -eq 1 ]]; then
     log "Forced reset by user"
     reset_testnet "$(get_github_release "$genesis_repository")"

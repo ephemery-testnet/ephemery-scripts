@@ -12,6 +12,7 @@ Script `retention.sh` provides the main mechanism for resetting the network. It 
 - EL_CLIENT - Type of execution client, lower case: geth, nethermind, besu, erigon, or reth
 - EL_SERVICE - Name of the execution client systemd service to start/stop
 - EL_DATADIR - Data directory of the execution client
+- EL_USER - **Optional:** Username that the genesis initialization should be run for the execution clients. Runs as script user if not assigned
 - CL_CLIENT - Type of consensus client, lower case: prysm, lighthouse, nimbus, teku or lodestar
 - CL_SERVICE - Name of the consensus client systemd service to start/stop
 - CL_DATADIR - Data directory of consensus client
@@ -19,8 +20,8 @@ Script `retention.sh` provides the main mechanism for resetting the network. It 
 - VC_CLIENT - **Optional:** Type of validator client, lower case: prysm, lighthouse, nimbus, teku or lodestar. Leave unset if using single-process consensus/validator client.
 - VC_SERVICE - **Optional:** Name of the validator client systemd service to start/stop. Leave unset if using single-process consensus/validator client.
 - VC_DATADIR - **Optional:** Data directory of validator client. Leave unset if using single-process consensus/validator client.
-- EPHEMERY_FILES_USER - **Optional:** User to which Ephemery testnet directory and files should be assigned. By default file ownership will be left unchanged.
-- EPHEMERY_FILES_GROUP - **Optional:** Group to which Ephemery testnet directory and files should be assigned. By default the group will be left unchanged.
+- TESTNET_FILES_USER - **Optional:** User to which testnet directory and files should be assigned. By default file ownership will be left unchanged.
+- TESTNET_FILES_GROUP - **Optional:** Group to which testnet directory and files should be assigned. By default the group will be left unchanged.
 - FORCE_RESET - **Optional:** Set to `1` to force reset of testnet files and clients for testing purposes. Default: `0`
 
 See `.env.sample` for an example of setting the environment variables. Run `retention.sh .env` to use values set in `.env` environment variables file.
