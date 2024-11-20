@@ -107,50 +107,22 @@ testnet_files_group=${TESTNET_FILES_GROUP:-$default_testnet_files_group}
 # Set FORCE_RESET environment variable to 1 test reset
 force_reset="${FORCE_RESET:-0}"
 
-start_clients() {
+start_client() {
+  local client_service="$1"
   
-  # Build and execute the systemctl command for cl_service
-  if [ -n "$cl_service" ]; then
-    log "Starting $cl_service systemd service"
-    cmd=("/bin/systemctl" "start" "$cl_service")
-    "${cmd[@]}"
-  fi
-  
-  # Build and execute the systemctl command for el_service
-  if [ -n "$el_service" ]; then
-    log "Starting $el_service systemd service"
-    cmd=("/bin/systemctl" "start" "$el_service")
-    "${cmd[@]}"
-  fi
-
-  # Conditionally start the validator client service if defined
-  if [ -n "$vc_service" ]; then
-    log "Starting $vc_service systemd service"
-    cmd=("/bin/systemctl" "start" "$vc_service")
+  if [ -n "$client_service" ]; then
+    log "Starting $client_service systemd service"
+    cmd=("/bin/systemctl" "start" "$client_service")
     "${cmd[@]}"
   fi
 }
 
-stop_clients() {
+stop_client() {
+  local client_service="$1"
 
-  # Build and execute the systemctl command for cl_service
-  if [ -n "$cl_service" ]; then
-    log "Stopping $cl_service systemd service"
-    cmd=("/bin/systemctl" "stop" "$cl_service")
-    "${cmd[@]}"
-  fi
-
-  # Build and execute the systemctl command for el_service
-  if [ -n "$el_service" ]; then
-    log "Stopping $el_service systemd service"
-    cmd=("/bin/systemctl" "stop" "$el_service")
-    "${cmd[@]}"
-  fi
-
-  # Conditionally stop the validator client service if defined
-  if [ -n "$vc_service" ]; then
-    log "Stopping $vc_service systemd service"
-    cmd=("/bin/systemctl" "stop" "$vc_service")
+  if [ -n "$client_service" ]; then
+    log "Stopping $client_service systemd service"
+    cmd=("/bin/systemctl" "stop" "$client_service")
     "${cmd[@]}"
   fi
 }
@@ -266,9 +238,9 @@ clear_consensus_datadir() {
 
       # Clear slashing_protection.sqlite3
       if [ -f "$vc_datadir/validators/slashing_protection.sqlite3" ]; then
-        rm_cmd=("rm" "-rf" "$vc_datadir/validators/slashing_protection.sqlite3")
+        rm_cmd=("rm" "-rf" "$cl_datadir/validators/slashing_protection.sqlite3")
         "${rm_cmd[@]}"
-        log "Deleted $vc_datadir/validators/slashing_protection.sqlite3 for $cl_client consensus client"
+        log "Deleted $cl_datadir/validators/slashing_protection.sqlite3 for $cl_client consensus client"
       fi
       ;;
 
@@ -282,9 +254,9 @@ clear_consensus_datadir() {
 
       # Clear validator.db
       if [ -f "$vc_datadir/prysm-wallet-v2/direct/validator.db" ]; then
-        rm_cmd=("rm" "-rf" "$vc_datadir/prysm-wallet-v2/direct/validator.db")
+        rm_cmd=("rm" "-rf" "$cl_datadir/prysm-wallet-v2/direct/validator.db")
         "${rm_cmd[@]}"
-        log "Deleted $vc_datadir/prysm-wallet-v2/direct/validator.db for $cl_client consensus client"
+        log "Deleted $cl_datadir/prysm-wallet-v2/direct/validator.db for $cl_client consensus client"
       fi
       ;;
   esac
@@ -292,57 +264,60 @@ clear_consensus_datadir() {
 
 
 clear_validator_datadir() {
-  # Ensure $vc_datadir is a valid directory or file path before proceeding
+ 
+  if [ -n "$vc_client" ]; then
+    log "Validator client undefined."
+    return
+  fi
+  
   if [ -z "$vc_datadir" ] || [ ! -d "$vc_datadir" ]; then
     log "Validator data directory '$vc_datadir' is invalid or does not exist."
-    return 1
+    return
   fi
 
   # Only proceed if both $vc_client and $vc_service are set
-  if [ -n "$vc_service" ] && [ -n "$vc_client" ]; then
-    case "$vc_client" in
-      "prysm")
-        if [ -f "$vc_datadir/prysm-wallet-v2/direct/validator.db" ]; then
-          rm_cmd=("rm" "-rf" "$vc_datadir/prysm-wallet-v2/direct/validator.db")
-          "${rm_cmd[@]}"
-          log "Deleted $vc_datadir/prysm-wallet-v2/direct/validator.db for $vc_client validator client"
-        fi
-        ;;
+  case "$vc_client" in
+    "prysm")
+      if [ -f "$vc_datadir/prysm-wallet-v2/direct/validator.db" ]; then
+        rm_cmd=("rm" "-rf" "$vc_datadir/prysm-wallet-v2/direct/validator.db")
+        "${rm_cmd[@]}"
+        log "Deleted $vc_datadir/prysm-wallet-v2/direct/validator.db for $vc_client validator client"
+      fi
+      ;;
 
-      "teku")
-        if [ -f "$vc_datadir/slashprotection/slashprotection.sqlite" ]; then
-          rm_cmd=("rm" "-rf" "$vc_datadir/slashprotection/slashprotection.sqlite")
-          "${rm_cmd[@]}"
-          log "Deleted $vc_datadir/slashprotection/slashprotection.sqlite for $vc_client validator client"
-        fi
-        ;;
+    "teku")
+      if [ -f "$vc_datadir/slashprotection/slashprotection.sqlite" ]; then
+        rm_cmd=("rm" "-rf" "$vc_datadir/slashprotection/slashprotection.sqlite")
+        "${rm_cmd[@]}"
+        log "Deleted $vc_datadir/slashprotection/slashprotection.sqlite for $vc_client validator client"
+      fi
+      ;;
 
-      "nimbus")
-        if [ -f "$vc_datadir/validators/slashing_protection.sqlite3" ]; then
-          rm_cmd=("rm" "-rf" "$vc_datadir/validators/slashing_protection.sqlite3")
-          "${rm_cmd[@]}"
-          log "Deleted $vc_datadir/validators/slashing_protection.sqlite3 for $vc_client validator client"
-        fi
-        ;;
+    "nimbus")
+      if [ -f "$vc_datadir/validators/slashing_protection.sqlite3" ]; then
+        rm_cmd=("rm" "-rf" "$vc_datadir/validators/slashing_protection.sqlite3")
+        "${rm_cmd[@]}"
+        log "Deleted $vc_datadir/validators/slashing_protection.sqlite3 for $vc_client validator client"
+      fi
+      ;;
 
-      "lighthouse")
-        if [ -f "$vc_datadir/keys/slashing_protection.sqlite" ]; then
-          rm_cmd=("rm" "-rf" "$vc_datadir/keys/slashing_protection.sqlite")
-          "${rm_cmd[@]}"
-          log "Deleted $vc_datadir/keys/slashing_protection.sqlite for $vc_client validator client"
-        fi
-        ;;
+    "lighthouse")
+      if [ -f "$vc_datadir/keys/slashing_protection.sqlite" ]; then
+        rm_cmd=("rm" "-rf" "$vc_datadir/keys/slashing_protection.sqlite")
+        "${rm_cmd[@]}"
+        log "Deleted $vc_datadir/keys/slashing_protection.sqlite for $vc_client validator client"
+      fi
+      ;;
 
-      "lodestar")
-        # Delete validator-db if present
-        if [ -d "$vc_datadir/validator-db" ]; then
-          rm_cmd=("rm" "-rf" "$vc_datadir/validator-db"/*)
-          "${rm_cmd[@]}"
-          log "Deleted contents of $vc_datadir/validator-db/ for $vc_client validator client"
-        fi
-        ;;
-    esac
-  fi
+    "lodestar")
+      # Delete validator-db if present
+      if [ -d "$vc_datadir/validator-db" ]; then
+        rm_cmd=("rm" "-rf" "$vc_datadir/validator-db"/*)
+        "${rm_cmd[@]}"
+        log "Deleted contents of $vc_datadir/validator-db/ for $vc_client validator client"
+      fi
+      ;;
+  esac
 }
 
 
@@ -422,27 +397,43 @@ download_genesis_release() {
   "${wget_cmd[@]}" | "${tar_cmd[@]}" > /dev/null 2>&1
 
   # Reset ownership if testnet_files_user and testnet_files_group are set and exist
-  if [[ "$testnet_files_user" =~ ^[a-zA-Z0-9_-]+$ ]] && id -u "$testnet_files_user" >/dev/null 2>&1 &&
-     [[ "$testnet_files_group" =~ ^[a-zA-Z0-9_-]+$ ]] && getent group "$testnet_files_group" >/dev/null 2>&1; then
-     
-      chown_cmd=("chown" "-R" "$testnet_files_user:$testnet_files_group" "$testnet_dir")
-      "${chown_cmd[@]}"
-      log "Reset ownership and group of testnet genesis files in $testnet_dir to $testnet_files_user:$testnet_files_group"
-  else
-      log "Invalid user or group: $testnet_files_user or $testnet_files_group does not exist"
+  if [[ -n "$testnet_files_user" && -n "$testnet_files_group" ]]; then
+      if [[ "$testnet_files_user" =~ ^[a-zA-Z0-9_-]+$ ]] && id -u "$testnet_files_user" >/dev/null 2>&1 &&
+         [[ "$testnet_files_group" =~ ^[a-zA-Z0-9_-]+$ ]] && getent group "$testnet_files_group" >/dev/null 2>&1; then
+         
+          chown_cmd=("chown" "-R" "$testnet_files_user:$testnet_files_group" "$testnet_dir")
+          "${chown_cmd[@]}"
+          log "Reset ownership and group of testnet genesis files in $testnet_dir to $testnet_files_user:$testnet_files_group"
+      else
+          log "Invalid user or group: $testnet_files_user or $testnet_files_group does not exist"
+      fi
   fi
 
 }
 
 
-reset_testnet() {
-  stop_clients
-  clear_consensus_datadir
+reset_testnet() { 
+
+  stop_client($el_service)
+  stop_client($cl_service)
+
+  if [ -n "$vc_service" ]; then
+    stop_client($vc_service)
+  fi
+
   clear_execution_datadir
-  clear_validator_datadir
+  clear_consensus_datadir
+
   download_genesis_release $1
   setup_genesis
-  start_clients
+
+  if [ -n "$vc_service" ]; then
+    clear_validator_datadir
+    start_client($vc_service)
+  fi
+
+  start_client($el_service)
+  start_client($cl_service)
 }
 
 
