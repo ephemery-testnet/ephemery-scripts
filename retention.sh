@@ -414,11 +414,11 @@ download_genesis_release() {
 
 reset_testnet() { 
 
-  stop_client($el_service)
-  stop_client($cl_service)
+  stop_client $el_service
+  stop_client $cl_service
 
   if [ -n "$vc_service" ]; then
-    stop_client($vc_service)
+    stop_client $vc_service
   fi
 
   clear_execution_datadir
@@ -429,11 +429,11 @@ reset_testnet() {
 
   if [ -n "$vc_service" ]; then
     clear_validator_datadir
-    start_client($vc_service)
+    start_client $vc_service
   fi
 
-  start_client($el_service)
-  start_client($cl_service)
+  start_client $el_service
+  start_client $cl_service
 }
 
 
