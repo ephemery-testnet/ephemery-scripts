@@ -265,7 +265,7 @@ clear_consensus_datadir() {
 
 clear_validator_datadir() {
  
-  if [ -n "$vc_client" ]; then
+  if [ -z "$vc_client" ]; then
     log "Validator client undefined."
     return
   fi
