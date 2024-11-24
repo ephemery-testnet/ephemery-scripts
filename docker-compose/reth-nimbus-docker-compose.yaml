@@ -1,31 +1,47 @@
-version: '3'
-
 services:
-  el_reth:
-    container_name: reth
-    image: pk910/ephemery-reth:latest
-    restart: unless-stopped
-    volumes:
-      - ./reth-data:/data/
-      - ./config:/config
-      - ./jwtsecret:/execution-auth.jwt:ro
-    command: >
-      node --datadir=/data --config /data/reth-conf.toml --http --http.addr=0.0.0.0 --http.port=8545
-      --authrpc.addr=0.0.0.0 --authrpc.port=8551 --authrpc.jwtsecret=/execution-auth.jwt
-      --chain=/ephemery_config/genesis.json
-    network_mode: "host"
-
   cl_nimbus:
+    user: root
     container_name: nimbus
     image: pk910/ephemery-nimbus:latest
     restart: unless-stopped
     volumes:
       - ./nimbus-data:/data/
-      - ./config:/config
-      - ./jwtsecret:/execution-auth.jwt:ro
-    command: >
-      nimbus_beacon_node --data-dir=/data --web3-url=http://localhost:8545 
-      --jwt-secret=/execution-auth.jwt --network=/ephemery_config --bootstrap-node=${BOOTNODE_ENR_LIST}
+      - ./config/nimbus-config.toml:/nimbus-config.toml
+      - ./jwtsecret/execution-auth.jwt:/execution-auth.jwt:ro
+    command: >-
+      --network=ephemery
+      --config-file=/nimbus-config.toml
+      --data-dir=/data
+      --log-level=info
+      --rest
+      --rest-address=0.0.0.0
+      --rpc-port=5052
+      --metrics
+      --metrics-address=0.0.0.0
+      --jwt-secret=/execution-auth.jwt
+      --graffiti="axol.io reth-nimbus"
+    network_mode: "host"
+
+  el_reth:
+    user: root
+    container_name: reth
+    image: pk910/ephemery-reth:latest
+    restart: unless-stopped
+    volumes:
+      - ./reth-data:/data/
+      - ./config/reth-conf.toml:/reth-config.toml
+      - ./jwtsecret/execution-auth.jwt:/execution-auth.jwt:ro
+    command: >-
+      node
+      --datadir=/data
+      --config /reth-config.toml
+      --http
+      --http.addr=0.0.0.0
+      --http.port=8545
+      --authrpc.addr=0.0.0.0
+      --authrpc.port=8551
+      --authrpc.jwtsecret=/execution-auth.jwt
+      --chain=/ephemery_config/genesis.json
     network_mode: "host"
 
   reset:
@@ -35,9 +51,9 @@ services:
       context: ./retention
       dockerfile: ./Dockerfile
     volumes:
-      - ./:/data
+      - ./:/data/
       - ./testnet:/testnet
-      - /var/run/docker.sock:/var/run/docker.sock:ro 
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     environment:
       - hostdir=$PWD
     network_mode: "host"
