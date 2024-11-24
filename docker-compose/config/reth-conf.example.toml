@@ -1,0 +1,207 @@
+[Eth]
+NetworkId = NET_ID
+SyncMode = "full"
+DiscoveryURLs = ["enrtree://AKA3AM6LPBYEUDMVNU3BSVQJ5AD45Y7YPOHJLEF6W26QOE4VTUDPE@all.mainnet.ethdisco.net"]
+NoPruning = false
+NoPrefetch = false
+TxLookupLimit = 2350000
+LightPeers = 100
+UltraLightFraction = 75
+DatabaseCache = 512
+TrieCleanCache = 154
+TrieCleanCacheJournal = "triecache"
+TrieCleanCacheRejournal = 3600000000000
+TrieDirtyCache = 256
+TrieTimeout = 3600000000000
+SnapshotCache = 102
+Preimages = false
+FilterLogCacheSize = 32
+EnablePreimageRecording = false
+RPCGasCap = 50000000
+RPCEVMTimeout = 5000000000
+RPCTxFeeCap = 1e+00
+
+[Eth.Miner]
+GasFloor = 0
+GasCeil = 30000000
+GasPrice = 1000000000
+Recommit = 3000000000
+Noverify = false
+
+[Eth.Ethash]
+CacheDir = "ethash"
+CachesInMem = 2
+CachesOnDisk = 3
+CachesLockMmap = false
+DatasetDir = "/root/.ethash"
+DatasetsInMem = 1
+DatasetsOnDisk = 2
+DatasetsLockMmap = false
+PowMode = 0
+NotifyFull = false
+
+[Eth.TxPool]
+Locals = []
+NoLocals = false
+Journal = "transactions.rlp"
+Rejournal = 3600000000000
+PriceLimit = 1
+PriceBump = 10
+AccountSlots = 16
+GlobalSlots = 5120
+AccountQueue = 64
+GlobalQueue = 1024
+Lifetime = 10800000000000
+
+[Eth.GPO]
+Blocks = 20
+Percentile = 60
+MaxHeaderHistory = 1024
+MaxBlockHistory = 1024
+MaxPrice = 500000000000
+IgnorePrice = 2
+
+[Node]
+DataDir = "/data/reth-data"
+IPCPath = "reth.ipc"
+HTTPHost = "127.0.0.1"
+HTTPPort = 8545
+HTTPVirtualHosts = ["*"]
+HTTPModules = ["net", "web3", "eth", "debug"]
+AuthAddr = "localhost"
+AuthPort = 8551
+AuthVirtualHosts = ["*"]
+WSHost = ""
+WSPort = 8546
+WSModules = ["net", "web3", "eth"]
+GraphQLVirtualHosts = ["localhost"]
+JWTSecret = "/config/jwtsecret"
+
+[Node.P2P]
+MaxPeers = 50
+NoDiscovery = false
+BootstrapNodes = ["enode://0f2c301a9a3f9fa2ccfa362b79552c052905d8c2982f707f46cd29ece5a9e1c14ecd06f4ac951b228f059a43c6284a1a14fce709e8976cac93b50345218bf2e9@135.181.140.168:30343"]
+StaticNodes = []
+TrustedNodes = []
+ListenAddr = ":30303"
+DiscAddr = ""
+EnableMsgEvents = false
+
+[Node.HTTPTimeouts]
+ReadTimeout = 30000000000
+ReadHeaderTimeout = 30000000000
+WriteTimeout = 30000000000
+IdleTimeout = 120000000000
+
+[Metrics]
+HTTP = "127.0.0.1"
+Port = 6060
+InfluxDBEndpoint = "http://localhost:8086"
+InfluxDBDatabase = "reth"
+InfluxDBUsername = "test"
+InfluxDBPassword = "test"
+InfluxDBTags = "host=localhost"
+InfluxDBToken = "test"
+InfluxDBBucket = "reth"
+InfluxDBOrganization = "reth"
+
+[stages.headers]
+downloader_max_concurrent_requests = 100
+downloader_min_concurrent_requests = 5
+downloader_max_buffered_responses = 100
+downloader_request_limit = 1000
+commit_threshold = 10000
+
+[stages.bodies]
+downloader_request_limit = 200
+downloader_stream_batch_size = 1000
+downloader_max_buffered_blocks_size_bytes = 2147483648
+downloader_min_concurrent_requests = 5
+downloader_max_concurrent_requests = 100
+
+[stages.sender_recovery]
+commit_threshold = 5000000
+
+[stages.execution]
+max_blocks = 500000
+max_changes = 5000000
+max_cumulative_gas = 1500000000000
+max_duration = "10m"
+
+[stages.prune]
+commit_threshold = 1000000
+
+[stages.account_hashing]
+clean_threshold = 500000
+commit_threshold = 100000
+
+[stages.storage_hashing]
+clean_threshold = 500000
+commit_threshold = 100000
+
+[stages.merkle]
+clean_threshold = 5000
+
+[stages.transaction_lookup]
+chunk_size = 5000000
+
+[stages.index_account_history]
+commit_threshold = 100000
+
+[stages.index_storage_history]
+commit_threshold = 100000
+
+[stages.etl]
+file_size = 524288000
+
+[prune]
+block_interval = 5
+
+[prune.segments.receipts_log_filter]
+
+[peers]
+refill_slots_interval = "5s"
+trusted_nodes = []
+trusted_nodes_only = false
+max_backoff_count = 5
+ban_duration = "12h"
+
+[peers.connection_info]
+max_outbound = 100
+max_inbound = 30
+max_concurrent_outbound_dials = 15
+
+[peers.reputation_weights]
+bad_message = -16384
+bad_block = -16384
+bad_transactions = -16384
+already_seen_transactions = 0
+timeout = -4096
+bad_protocol = -2147483648
+failed_to_connect = -25600
+dropped = -4096
+bad_announcement = -1024
+
+[peers.backoff_durations]
+low = "30s"
+medium = "3m"
+high = "15m"
+max = "1h"
+
+[sessions]
+session_command_buffer = 32
+session_event_buffer = 260
+
+[sessions.limits]
+
+[sessions.initial_internal_request_timeout]
+secs = 20
+nanos = 0
+
+[sessions.protocol_breach_request_timeout]
+secs = 120
+nanos = 0
+
+[sessions.pending_session_timeout]
+secs = 20
+nanos = 0
