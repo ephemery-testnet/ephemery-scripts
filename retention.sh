@@ -135,8 +135,9 @@ clear_execution_datadir() {
   fi
 
   case "$el_client" in
+    # Geth = geth/nodekey
     "geth")
-      # Delete everything in $el_datadir/geth/* except for nodekey
+      # Delete everything in $el_datadir/geth/ except for nodekey
       if [ -d "$el_datadir/geth" ]; then
         find_cmd=("find" "$el_datadir/geth" "-mindepth" "1" "-maxdepth" "1" "!" "-name" "nodekey" "-exec" "rm" "-rf" "{}" "+")
         "${find_cmd[@]}"
@@ -144,23 +145,53 @@ clear_execution_datadir() {
       fi
       ;;
 
+    # Erigon = nodekey
     "erigon")
-      # Delete everything in $el_datadir except for config.json and customGenesis.json
+      # Delete everything in $el_datadir/ except for nodekey
       if [ -d "$el_datadir" ]; then
-        find_cmd=("find" "$el_datadir" "!" "-name" "config.json" "!" "-name" "customGenesis.json" "-type" "f" "-delete")
+        find_cmd=("find" "$el_datadir" "-mindepth" "1" "-maxdepth" "1" "!" "-name" "nodekey" "-exec" "rm" "-rf" "{}" "+")
         "${find_cmd[@]}"
-        log "Retained config.json and customGenesis.json files in $el_datadir and deleted other contents for $el_client execution client"
+        log "Retained nodekey file in $el_datadir and deleted other contents for $el_client execution client"
       fi
       ;;
 
-    *)
-      # Delete everything in $el_datadir for other clients
+    # Reth = discovery-secret
+    "reth")
+      # Delete everything in $el_datadir/ except for discovery-secret
       if [ -d "$el_datadir" ]; then
-        rm_cmd=("rm" "-rf" "$el_datadir"/*)
-        "${rm_cmd[@]}"
-        log "Deleted contents of $el_datadir/ for $el_client execution client"
+        find_cmd=("find" "$el_datadir" "-mindepth" "1" "-maxdepth" "1" "!" "-name" "discovery-secret" "-exec" "rm" "-rf" "{}" "+")
+        "${find_cmd[@]}"
+        log "Retained discovery-secret file in $el_datadir and deleted other contents for $el_client execution client"
       fi
       ;;
+
+    # Besu = key
+    "besu")
+      # Delete everything in $el_datadir/ except for key
+      if [ -d "$el_datadir" ]; then
+        find_cmd=("find" "$el_datadir" "-mindepth" "1" "-maxdepth" "1" "!" "-name" "key" "-exec" "rm" "-rf" "{}" "+")
+        "${find_cmd[@]}"
+        log "Retained key file in $el_datadir and deleted other contents for $el_client execution client"
+      fi
+      ;;
+
+    # Nethermind = keystore/node.key.plain or config
+    "nethermind")
+      if [ -d "$el_datadir" ]; then
+        # Delete everything in $el_datadir except the keystore directory
+        find_cmd1=("find" "$el_datadir" "-mindepth" "1" "(" "-path" "$el_datadir/keystore" "-prune" ")" "-o" "-exec" "rm" "-rf" "{}" "+")
+        "${find_cmd1[@]}"
+
+        # Delete everything in keystore except node.key.plain
+        if [ -d "$el_datadir/keystore" ]; then
+          find_cmd2=("find" "$el_datadir/keystore" "-mindepth" "1" "!" "-path" "$el_datadir/keystore/node.key.plain" "-exec" "rm" "-rf" "{}" "+")
+          "${find_cmd2[@]}"
+        fi
+
+        log "Retained keystore/node.key.plain in $el_datadir and deleted other contents for $el_client execution client"
+      fi
+      ;;
+
   esac
 }
 
@@ -342,7 +373,7 @@ setup_genesis() {
 
     "erigon")
       if [ -z "$el_datadir" ] || [ -z "$testnet_dir" ]; then
-        log "Cannot initialize geth. Missing el_datadir or testnet_dir variable values."
+        log "Cannot initialize erigon. Missing el_datadir or testnet_dir variable values."
       else
         log "Initializing erigon genesis"
         cmd+=("erigon" "init" "--datadir" "$el_datadir" "$testnet_dir/genesis.json")
