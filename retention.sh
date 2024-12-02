@@ -52,7 +52,7 @@ if [[ -n "$1" ]]; then
     exit 1
   fi
 else
-  log "No environment file provided. Using default values."
+  log "No environment file provided. Using existing environment variables or default values."
 fi
 
 genesis_repository="ephemery-testnet/ephemery-genesis"
