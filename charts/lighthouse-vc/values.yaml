@@ -90,7 +90,7 @@ lighthouse:
     repository: "sigp/lighthouse"
     pullPolicy: "IfNotPresent"
     # -- Image tag
-    tag: v4.1.0
+    tag: v6.0.1
   ports:
     # -- [Validator Client API](https://lighthouse-book.sigmaprime.io/api-vc.html) port
     httpJson: 5062
