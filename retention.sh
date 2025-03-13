@@ -268,7 +268,7 @@ clear_consensus_datadir() {
       fi
 
       # Clear slashing_protection.sqlite3
-      if [ -f "$vc_datadir/validators/slashing_protection.sqlite3" ]; then
+      if [ -f "$cl_datadir/validators/slashing_protection.sqlite3" ]; then
         rm_cmd=("rm" "-rf" "$cl_datadir/validators/slashing_protection.sqlite3")
         "${rm_cmd[@]}"
         log "Deleted $cl_datadir/validators/slashing_protection.sqlite3 for $cl_client consensus client"
