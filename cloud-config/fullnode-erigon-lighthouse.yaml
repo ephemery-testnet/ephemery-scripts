@@ -19,8 +19,8 @@ users:
     uid: "1000"
     ssh-authorized-keys:
       - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCaGa3CFThBknOqAWqn8G4qHcl/U1Lm9CUjZ+zG+CxnBDT6K6CVgHkjEHru7gkrP7LrDKQI7JPPPSO/+ozUWcCoBomjzZ4w2inelUverCRHe2iZBSP9RNqVRc4p2F3NIiOblzYUiXYdXu1I0zFNe4jvkjTtlZ6gb8PiDqUmMs4hRWfIG88ahhwHnBeqEECK0TNra4h4n6wq0rvkGj21xSH0CXw4X6O2a5tdARbAsrMA1pQISX4AKniHcMCAo+gqobXHeN2sP2JMq8SrszjkzH/Xj/vMtBe/iD+eCexPVXRfkMrxtZxseazkJDTB6E6DVoNOZPfqs4RyjE8MahWh3UI/ pk910_root
-  - name: etherum
-    home: /home/etherum
+  - name: ethereum
+    home: /home/ethereum
     shell: /bin/bash
     uid: "1001"
 write_files:
@@ -34,13 +34,13 @@ write_files:
     content: |
       # User privilege specification
       pk910    ALL=(ALL) NOPASSWD: ALL
-  - path: /etc/sudoers.d/etherum
+  - path: /etc/sudoers.d/ethereum
     content: |
       # Cmnd alias specification
       Cmnd_Alias ETH_CMDS = /bin/systemctl stop erigon, /bin/systemctl start erigon, /bin/systemctl stop beacon-chain, /bin/systemctl start beacon-chain, /bin/systemctl stop validator, /bin/systemctl start validator, /bin/systemctl stop boot-node, /bin/systemctl start boot-node
 
       # User privilege specification
-      etherum    ALL=(ALL) NOPASSWD: ETH_CMDS
+      ethereum    ALL=(ALL) NOPASSWD: ETH_CMDS
   - path: /etc/systemd/system/erigon.service
     content: |
       [Unit]
@@ -49,10 +49,10 @@ write_files:
       After           = network-online.target
 
       [Service]
-      User            = etherum
-      WorkingDirectory= /home/etherum/erigon
-      EnvironmentFile = /home/etherum/testnet/nodevars_env.txt
-      ExecStart       = /home/etherum/erigon/erigon --datadir /home/etherum/data-erigon --port 30303 --http --http.port 8545 --authrpc.jwtsecret=/home/etherum/jwtsecret  --private.api.addr 127.0.0.1:9091 --authrpc.port 8551 --bootnodes "${BOOTNODE_ENODE_LIST}" --networkid ${CHAIN_ID} --externalcl
+      User            = ethereum
+      WorkingDirectory= /home/ethereum/erigon
+      EnvironmentFile = /home/ethereum/testnet/nodevars_env.txt
+      ExecStart       = /home/ethereum/erigon/erigon --datadir /home/ethereum/data-erigon --port 30303 --http --http.port 8545 --authrpc.jwtsecret=/home/ethereum/jwtsecret  --private.api.addr 127.0.0.1:9091 --authrpc.port 8551 --bootnodes "${BOOTNODE_ENODE_LIST}" --networkid ${CHAIN_ID} --externalcl
       Restart         = on-failure
 
       [Install]
@@ -65,10 +65,10 @@ write_files:
       After           = network-online.target
 
       [Service]
-      User            = etherum
-      WorkingDirectory= /home/etherum/lighthouse
-      EnvironmentFile = /home/etherum/testnet/nodevars_env.txt
-      ExecStart       = /home/etherum/lighthouse/lighthouse bn --testnet-dir /home/etherum/testnet --datadir /home/etherum/data-lh --staking --metrics --port 9010 --http-address 0.0.0.0 --metrics-address 0.0.0.0 --execution-endpoint http://127.0.0.1:8551 --execution-jwt="/home/etherum/jwtsecret" --boot-nodes ${BOOTNODE_ENR_LIST}
+      User            = ethereum
+      WorkingDirectory= /home/ethereum/lighthouse
+      EnvironmentFile = /home/ethereum/testnet/nodevars_env.txt
+      ExecStart       = /home/ethereum/lighthouse/lighthouse bn --testnet-dir /home/ethereum/testnet --datadir /home/ethereum/data-lh --staking --metrics --port 9010 --http-address 0.0.0.0 --metrics-address 0.0.0.0 --execution-endpoint http://127.0.0.1:8551 --execution-jwt="/home/ethereum/jwtsecret" --boot-nodes ${BOOTNODE_ENR_LIST}
       Restart         = on-failure
 
       [Install]
@@ -81,14 +81,14 @@ write_files:
       After           = network-online.target
 
       [Service]
-      User            = etherum
-      WorkingDirectory= /home/etherum/lighthouse
-      ExecStart       = /home/etherum/lighthouse/lighthouse vc --testnet-dir /home/etherum/testnet --datadir /home/etherum/data-lh --beacon-nodes "http://localhost:5052" --graffiti "pk910 (2)" --suggested-fee-recipient 0x14627ea0e2B27b817DbfF94c3dA383bB73F8C30b --init-slashing-protection --allow-unsynced
+      User            = ethereum
+      WorkingDirectory= /home/ethereum/lighthouse
+      ExecStart       = /home/ethereum/lighthouse/lighthouse vc --testnet-dir /home/ethereum/testnet --datadir /home/ethereum/data-lh --beacon-nodes "http://localhost:5052" --graffiti "pk910 (2)" --suggested-fee-recipient 0x14627ea0e2B27b817DbfF94c3dA383bB73F8C30b --init-slashing-protection --allow-unsynced
       Restart         = on-failure
 
       [Install]
       WantedBy= multi-user.target
-  - path: /home/etherum/setup.sh
+  - path: /home/ethereum/setup.sh
     content: |
       #!/bin/bash
       cd ~
@@ -105,14 +105,14 @@ write_files:
       setup_erigon
       setup_lighthouse
 
-  - path: /home/etherum/retention.sh
+  - path: /home/ethereum/retention.sh
     content: |
       #!/bin/bash
 
       genesis_repository="ephemery-testnet/ephemery-genesis"
-      testnet_dir=/home/etherum/testnet
-      el_datadir=/home/etherum/data-erigon
-      cl_datadir=/home/etherum/data-lh
+      testnet_dir=/home/ethereum/testnet
+      el_datadir=/home/ethereum/data-erigon
+      cl_datadir=/home/ethereum/data-lh
       cl_port=5052
 
       start_clients() {
@@ -151,37 +151,37 @@ write_files:
       source ~/retention-lib.sh
       retention_main
 
-  - path: /home/etherum/setup-retention.sh
+  - path: /home/ethereum/setup-retention.sh
     content: |
       #!/bin/bash
-      cd /home/etherum
+      cd /home/ethereum
       chmod +x retention.sh
       wget https://raw.githubusercontent.com/ephemery-testnet/ephemery-scripts/master/resources/retention-lib.sh
       ./retention.sh
-      (2>/dev/null crontab -l ; echo "*/5 * * * * /home/etherum/retention.sh") | crontab -
-  - path: /home/etherum/setup-validators.sh
+      (2>/dev/null crontab -l ; echo "*/5 * * * * /home/ethereum/retention.sh") | crontab -
+  - path: /home/ethereum/setup-validators.sh
     content: |
       #!/bin/bash
-      cd /home/etherum
+      cd /home/ethereum
 
       # ADD YOUR VALIDATOR MNEMONIC HERE
       validator_mnemonic=""
       validator_count=100
 
       if [ ! -z "$validator_mnemonic" ]; then
-        echo $validator_mnemonic | lighthouse/lighthouse account validator recover --datadir /home/etherum/data-lh --stdin-inputs --count $validator_count
+        echo $validator_mnemonic | lighthouse/lighthouse account validator recover --datadir /home/ethereum/data-lh --stdin-inputs --count $validator_count
       fi
 runcmd:
-  - [ chown, -R, "etherum:etherum", /home/etherum ]
-  - [ chmod, +x, /home/etherum/setup.sh ]
-  - [ sudo, -u, etherum, /home/etherum/setup.sh ]
+  - [ chown, -R, "ethereum:ethereum", /home/ethereum ]
+  - [ chmod, +x, /home/ethereum/setup.sh ]
+  - [ sudo, -u, ethereum, /home/ethereum/setup.sh ]
   - [ systemctl, daemon-reload ]
   - [ systemctl, enable, erigon.service ]
   - [ systemctl, enable, beacon-chain.service ]
   - [ systemctl, enable, validator.service ]
-  - [ chmod, +x, /home/etherum/setup-validators.sh ]
-  - [ sudo, -u, etherum, /home/etherum/setup-validators.sh ]
-  - [ chmod, +x, /home/etherum/setup-retention.sh ]
-  - [ sudo, -u, etherum, /home/etherum/setup-retention.sh ]
+  - [ chmod, +x, /home/ethereum/setup-validators.sh ]
+  - [ sudo, -u, ethereum, /home/ethereum/setup-validators.sh ]
+  - [ chmod, +x, /home/ethereum/setup-retention.sh ]
+  - [ sudo, -u, ethereum, /home/ethereum/setup-retention.sh ]
 
 

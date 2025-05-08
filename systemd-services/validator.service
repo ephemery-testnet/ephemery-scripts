@@ -4,9 +4,9 @@ Wants           = network-online.target beacon-chain.service
 After           = network-online.target
 
 [Service]
-User            = etherum
-WorkingDirectory= /home/etherum/lighthouse
-ExecStart       = /home/etherum/lighthouse/lighthouse vc --testnet-dir /home/etherum/testnet --datadir /home/etherum/data-lh --beacon-nodes "http://localhost:5052" --graffiti "pk910 (2)" --suggested-fee-recipient 0x14627ea0e2B27b817DbfF94c3dA383bB73F8C30b --init-slashing-protection --allow-unsynced
+User            = ethereum
+WorkingDirectory= /home/ethereum/lighthouse
+ExecStart       = /home/ethereum/lighthouse/lighthouse vc --testnet-dir /home/ethereum/testnet --datadir /home/ethereum/data-lh --beacon-nodes "http://localhost:5052" --graffiti "pk910 (2)" --suggested-fee-recipient 0x14627ea0e2B27b817DbfF94c3dA383bB73F8C30b --init-slashing-protection --allow-unsynced
 Restart         = on-failure
 
 [Install]

@@ -11,8 +11,8 @@ users:
     uid: "1000"
     ssh-authorized-keys:
       - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCaGa3CFThBknOqAWqn8G4qHcl/U1Lm9CUjZ+zG+CxnBDT6K6CVgHkjEHru7gkrP7LrDKQI7JPPPSO/+ozUWcCoBomjzZ4w2inelUverCRHe2iZBSP9RNqVRc4p2F3NIiOblzYUiXYdXu1I0zFNe4jvkjTtlZ6gb8PiDqUmMs4hRWfIG88ahhwHnBeqEECK0TNra4h4n6wq0rvkGj21xSH0CXw4X6O2a5tdARbAsrMA1pQISX4AKniHcMCAo+gqobXHeN2sP2JMq8SrszjkzH/Xj/vMtBe/iD+eCexPVXRfkMrxtZxseazkJDTB6E6DVoNOZPfqs4RyjE8MahWh3UI/ pk910_root
-  - name: etherum
-    home: /home/etherum
+  - name: ethereum
+    home: /home/ethereum
     shell: /bin/bash
     uid: "1001"
 write_files:
@@ -22,13 +22,13 @@ write_files:
   - path: /etc/sudoers.d/pk910
     content: |
       pk910    ALL=(ALL) NOPASSWD: ALL
-  - path: /etc/sudoers.d/etherum
+  - path: /etc/sudoers.d/ethereum
     content: |
       # Cmnd alias specification
       Cmnd_Alias ETH_CMDS = /bin/systemctl stop geth, /bin/systemctl start geth, /bin/systemctl stop beacon-chain, /bin/systemctl start beacon-chain, /bin/systemctl stop validator, /bin/systemctl start validator, /bin/systemctl stop boot-node, /bin/systemctl start boot-node
 
       # User privilege specification
-      etherum    ALL=(ALL) NOPASSWD: ETH_CMDS
+      ethereum    ALL=(ALL) NOPASSWD: ETH_CMDS
   - path: /etc/systemd/system/geth.service
     content: |
       [Unit]
@@ -37,10 +37,10 @@ write_files:
       After           = network-online.target
 
       [Service]
-      User            = etherum
-      WorkingDirectory= /home/etherum/geth
-      EnvironmentFile = /home/etherum/testnet/nodevars_env.txt
-      ExecStart       = /home/etherum/geth/bin/geth --datadir /home/etherum/data-geth --port 30303 --http --http.addr 0.0.0.0 --http.port 8545 --http.api eth,net,personal,web3 --ws --ws.addr 0.0.0.0 --ws.port 8546 --ws.api eth,net,personal,web3 --authrpc.jwtsecret=/home/etherum/jwtsecret --syncmode=full --bootnodes "${BOOTNODE_ENODE_LIST}" --networkid ${CHAIN_ID}
+      User            = ethereum
+      WorkingDirectory= /home/ethereum/geth
+      EnvironmentFile = /home/ethereum/testnet/nodevars_env.txt
+      ExecStart       = /home/ethereum/geth/bin/geth --datadir /home/ethereum/data-geth --port 30303 --http --http.addr 0.0.0.0 --http.port 8545 --http.api eth,net,personal,web3 --ws --ws.addr 0.0.0.0 --ws.port 8546 --ws.api eth,net,personal,web3 --authrpc.jwtsecret=/home/ethereum/jwtsecret --syncmode=full --bootnodes "${BOOTNODE_ENODE_LIST}" --networkid ${CHAIN_ID}
       Restart         = on-failure
 
       [Install]
@@ -53,10 +53,10 @@ write_files:
       After           = network-online.target
 
       [Service]
-      User            = etherum
-      WorkingDirectory= /home/etherum/lodestar
-      EnvironmentFile = /home/etherum/testnet/nodevars_env.txt
-      ExecStart       = /home/etherum/lodestar/lodestar beacon --dataDir=/home/etherum/data-lodestar --paramsFile=/home/etherum/testnet/config.yaml --genesisStateFile=/home/etherum/testnet/genesis.ssz --eth1.depositContractDeployBlock=0 --network.connectToDiscv5Bootnodes=true --discv5=true --eth1=true --eth1.providerUrls=http://localhost:8545 --execution.urls=http://localhost:8551 --rest=true --rest.address=0.0.0.0 --rest.namespace=* --rest.port=4000 --jwt-secret=/home/etherum/jwtsecret --bootnodes="${BOOTNODE_ENR_LIST}"
+      User            = ethereum
+      WorkingDirectory= /home/ethereum/lodestar
+      EnvironmentFile = /home/ethereum/testnet/nodevars_env.txt
+      ExecStart       = /home/ethereum/lodestar/lodestar beacon --dataDir=/home/ethereum/data-lodestar --paramsFile=/home/ethereum/testnet/config.yaml --genesisStateFile=/home/ethereum/testnet/genesis.ssz --eth1.depositContractDeployBlock=0 --network.connectToDiscv5Bootnodes=true --discv5=true --eth1=true --eth1.providerUrls=http://localhost:8545 --execution.urls=http://localhost:8551 --rest=true --rest.address=0.0.0.0 --rest.namespace=* --rest.port=4000 --jwt-secret=/home/ethereum/jwtsecret --bootnodes="${BOOTNODE_ENR_LIST}"
       Restart         = on-failure
 
       [Install]
@@ -69,9 +69,9 @@ write_files:
       After           = network-online.target
 
       [Service]
-      User            = etherum
-      WorkingDirectory= /home/etherum/lodestar
-      ExecStart       = /home/etherum/lodestar/lodestar validator --dataDir=/home/etherum/data-lodestar --paramsFile=/home/etherum/testnet/config.yaml --server http://localhost:4000 --keystoresDir=/home/etherum/data-keys/keys --secretsDir=/home/etherum/data-keys/secrets --graffiti "pk910 (4)" --suggested-fee-recipient 0x14627ea0e2B27b817DbfF94c3dA383bB73F8C30b
+      User            = ethereum
+      WorkingDirectory= /home/ethereum/lodestar
+      ExecStart       = /home/ethereum/lodestar/lodestar validator --dataDir=/home/ethereum/data-lodestar --paramsFile=/home/ethereum/testnet/config.yaml --server http://localhost:4000 --keystoresDir=/home/ethereum/data-keys/keys --secretsDir=/home/ethereum/data-keys/secrets --graffiti "pk910 (4)" --suggested-fee-recipient 0x14627ea0e2B27b817DbfF94c3dA383bB73F8C30b
       Restart         = on-failure
 
       [Install]
@@ -83,7 +83,7 @@ write_files:
       curl -sL https://deb.nodesource.com/setup_16.x | sudo -E bash -
       apt-get update
       apt-get install -y nodejs yarn
-  - path: /home/etherum/setup.sh
+  - path: /home/ethereum/setup.sh
     content: |
       #!/bin/bash
       cd ~
@@ -101,14 +101,14 @@ write_files:
       setup_lodestar
       setup_jwtsecret
 
-  - path: /home/etherum/retention.sh
+  - path: /home/ethereum/retention.sh
     content: |
       #!/bin/bash
 
       genesis_repository="ephemery-testnet/ephemery-genesis"
-      testnet_dir=/home/etherum/testnet
-      el_datadir=/home/etherum/data-geth
-      cl_datadir=/home/etherum/data-lodestar
+      testnet_dir=/home/ethereum/testnet
+      el_datadir=/home/ethereum/data-geth
+      cl_datadir=/home/ethereum/data-lodestar
       cl_port=4000
 
 
@@ -147,40 +147,40 @@ write_files:
       source ~/retention-lib.sh
       retention_main
 
-  - path: /home/etherum/setup-retention.sh
+  - path: /home/ethereum/setup-retention.sh
     content: |
       #!/bin/bash
-      cd /home/etherum
+      cd /home/ethereum
       chmod +x retention.sh
       wget https://raw.githubusercontent.com/ephemery-testnet/ephemery-scripts/master/resources/retention-lib.sh
       ./retention.sh
-      (2>/dev/null crontab -l ; echo "*/5 * * * * /home/etherum/retention.sh") | crontab -
-  - path: /home/etherum/setup-validators.sh
+      (2>/dev/null crontab -l ; echo "*/5 * * * * /home/ethereum/retention.sh") | crontab -
+  - path: /home/ethereum/setup-validators.sh
     content: |
       #!/bin/bash
-      cd /home/etherum
-      export PATH=/home/etherum/golang/bin:/home/etherum/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+      cd /home/ethereum
+      export PATH=/home/ethereum/golang/bin:/home/ethereum/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
       # ADD YOUR VALIDATOR MNEMONIC HERE
       validator_mnemonic=""
       validator_count=50
 
       if [ ! -z "$validator_mnemonic" ]; then
-        eth2-val-tools keystores --insecure --prysm-pass password --out-loc /home/etherum/data-keys --source-mnemonic "$mnemonic" --source-max $validator_count
+        eth2-val-tools keystores --insecure --prysm-pass password --out-loc /home/ethereum/data-keys --source-mnemonic "$mnemonic" --source-max $validator_count
       fi
 runcmd:
   - [ chmod, +x, /root/setup.sh ]
   - [ /root/setup.sh ]
-  - [ chown, -R, "etherum:etherum", /home/etherum ]
-  - [ chmod, +x, /home/etherum/setup.sh ]
-  - [ sudo, -u, etherum, /home/etherum/setup.sh ]
+  - [ chown, -R, "ethereum:ethereum", /home/ethereum ]
+  - [ chmod, +x, /home/ethereum/setup.sh ]
+  - [ sudo, -u, ethereum, /home/ethereum/setup.sh ]
   - [ systemctl, daemon-reload ]
   - [ systemctl, enable, geth.service ]
   - [ systemctl, enable, beacon-chain.service ]
   - [ systemctl, enable, validator.service ]
-  - [ chmod, +x, /home/etherum/setup-validators.sh ]
-  - [ sudo, -u, etherum, /home/etherum/setup-validators.sh ]
-  - [ chmod, +x, /home/etherum/setup-retention.sh ]
-  - [ sudo, -u, etherum, /home/etherum/setup-retention.sh ]
+  - [ chmod, +x, /home/ethereum/setup-validators.sh ]
+  - [ sudo, -u, ethereum, /home/ethereum/setup-validators.sh ]
+  - [ chmod, +x, /home/ethereum/setup-retention.sh ]
+  - [ sudo, -u, ethereum, /home/ethereum/setup-retention.sh ]
 
 
