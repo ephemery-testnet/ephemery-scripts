@@ -1,6 +1,6 @@
 # geth-lighthouse
 
-![Version: 0.1.2](https://img.shields.io/badge/Version-0.1.2-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
+![Version: 0.1.3](https://img.shields.io/badge/Version-0.1.3-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
 
 Helm chart that spins up a post-merge ethereum node consisting of the go-ethereum (geth) execution client and the lighthouse consensus client.
 
@@ -48,7 +48,7 @@ Testnet rollback is automated via a CronJob that checks every five minutes wheth
 | fullnameOverride | string | `""` | Overrides the chart's computed fullname |
 | geth.image.pullPolicy | string | `"IfNotPresent"` | Container pull policy |
 | geth.image.repository | string | `"ethereum/client-go"` | Container image repository |
-| geth.image.tag | string | `"v1.12.0"` | Image tag |
+| geth.image.tag | string | `"v1.14.12"` | Image tag |
 | geth.jsonRpcInterface | string | `"0.0.0.0"` | Specify the listen address of the JSON-RPC API server for the execution client. |
 | geth.livenessProbe.initialDelaySeconds | int | `60` |  |
 | geth.livenessProbe.periodSeconds | int | `120` |  |
@@ -92,7 +92,7 @@ Testnet rollback is automated via a CronJob that checks every five minutes wheth
 | lighthouse.httpRestInterface | string | `"0.0.0.0"` | Specify the listen address of the lighthouse REST API server for the consensus client. |
 | lighthouse.image.pullPolicy | string | `"IfNotPresent"` |  |
 | lighthouse.image.repository | string | `"sigp/lighthouse"` | Container image repository |
-| lighthouse.image.tag | string | `"v4.2.0"` | Image tag |
+| lighthouse.image.tag | string | `"v6.0.1"` | Image tag |
 | lighthouse.livenessProbe.initialDelaySeconds | int | `60` |  |
 | lighthouse.livenessProbe.periodSeconds | int | `120` |  |
 | lighthouse.livenessProbe.tcpSocket.port | int | `5052` | Liveness probe tcpSocket port, default is the lighthouse httpRest port. |
