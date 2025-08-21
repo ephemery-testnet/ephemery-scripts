@@ -1,0 +1,38 @@
+# config.yaml
+
+# Network settings
+network:
+  name: "ephemery"
+  genesis_file: "/ephemery_config/genesis.json"
+
+# Data directory
+data_dir: "/data"
+
+# Logging settings
+log_level: "info"
+
+# RPC settings
+rpc:
+  enabled: true
+  address: "0.0.0.0"
+  port: 5052
+
+# JWT secret
+jwt_secret: "/execution-auth.jwt"
+
+# Graffiti
+graffiti: "axol.io"
+
+# Bootstrap nodes
+bootstrap_nodes:
+  - "enr:-LK4QNY-3kAhsjWCE8pMkjGroytJCSz2sDRLr7PK1Qq1S_jFM4ACNBL5F9QfCgRdLx7mg5bviKn67BrwQl2Hzwps9yYEh2F0dG5ldHOIAIABAAAAAACEZXRoMpCWvwmXUAAQG___________gmlkgnY0gmlwhIlKy_CJc2VjcDI1NmsxoQIGekwotjBCFtbW88gpntM3S9pfWA5MV94tCV-T9qMYsIN0Y3CCI4yDdWRwgiOM"
+  - "enr:-Iq4QNMYHuJGbnXyBj6FPS2UkOQ-hnxT-mIdNMMr7evR9UYtLemaluorL6J10RoUG1V4iTPTEbl3huijSNs5_ssBWFiGAYhBNHOzgmlkgnY0gmlwhIlKy_CJc2VjcDI1NmsxoQNULnJBzD8Sakd9EufSXhM4rQTIkhKBBTmWVJUtLCp8KoN1ZHCCIyk"
+  # Add more bootstrap nodes as needed
+
+# Metrics settings
+metrics:
+  enabled: false
+  address: "127.0.0.1"
+  port: 8008
+
+# Additional settings can be added as needed
