@@ -38,8 +38,8 @@ Reth can be built from source and also offers pre-built binaries.
 
 See Reth documentation for installation instructions:
 
-- [Binaries](https://paradigmxyz.github.io/reth/installation/binaries.html)
-- [Build from source](https://paradigmxyz.github.io/reth/installation/source.html)
+- [Binaries](https://reth.rs/installation/binaries)
+- [Build from source](https://reth.rs/installation/source)
 
 
 Use the following command to initialize the databaze from the Ephemery genesis file:
@@ -52,18 +52,18 @@ Afterwards, use the following command to run Reth:
 
 ```
     reth node \
-    --chain "~/testnet-all/genesis.json" \
+    --chain ~/testnet-all/genesis.json \
     --full \
     --port 30303 \
     --http \
-    --datadir "~/datadir-reth" \
-    --authrpc.jwtsecret "/secrets/jwt.hex" \
-    --bootnodes {bootnodes}
+    --datadir ~/datadir-reth \
+    --authrpc.jwtsecret /secrets/jwt.hex \
+    --bootnodes $(cat ~/testnet-all/boot_enode.txt | tr '\n' ',' | sed 's/,$//')
 ```
 
 Modify the paths as needed for your own setup.
 
-For `{bootnodes}` look in `~/testnet-all/boot_enode.txt`. Entries must be separated,by,commas and "enclosed in quotes".
+For `bootnodes`, look for `~/testnet-all/boot_enode.txt` as input which will format the boot nodes string from the file.  
 
 Depending on your OS, it may be necessary to add additional flags. Refer to the [Reth docs](https://paradigmxyz.github.io/reth/cli/node.html) for more details.
 
@@ -73,21 +73,23 @@ Lighthouse can be built from source and also offers pre-built binaries.
 
 See Lighthouse documentation for installation instructions:
 
-- [Binaries](https://lighthouse-book.sigmaprime.io/installation-binaries.html)
-- [Build from source](https://lighthouse-book.sigmaprime.io/installation-source.html)
+- [Binaries](https://lighthouse-book.sigmaprime.io/installation_binaries.html)
+- [Build from source](https://lighthouse-book.sigmaprime.io/installation_source.html)
 
 Run:
 ```
-lighthouse beacon_node \
-    --testnet-dir "~/testnet-all" \
-    --datadir "~/datadir-lighthouse" \
-    --eth1 \
-    --execution-jwt "/secrets/jwt.hex" \
+lighthouse bn \
+    --testnet-dir ~/testnet-all \
+    --datadir ~/datadir-lighthouse \
+    --execution-jwt /secrets/jwt.hex \
     --execution-endpoint http://localhost:8551 \
-    --boot-nodes {bootnodes}
+    --boot-nodes $(cat ~/testnet-all/boot_enr.txt | tr '\n' ',' | sed 's/,$//') \
+    --checkpoint-sync-url https://checkpointz.bordel.wtf
 ```
 
-For `{bootnodes}` look in `~/testnet-all/boot_enr.txt`. Entries must be separated,by,commas and "enclosed in quotes".
+For `boot-nodes`, look for `~/testnet-all/boot_enr.txt` as input which will format the boot nodes string from the file.  
+
+For `checkpoint-sync-url`, a list of checkpoint urls is available on the [Ephemery page](https://ephemery.dev/).
 
 ### A note on Ephemery environment variables
 
