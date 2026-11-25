@@ -261,8 +261,8 @@ setup_lodestar() {
   echo "setup lodestar: ${setup_version}  (build: ${src_need_build})"
 
   if [ "$src_need_build" = "yes" ]; then
-    yarn install --ignore-optional
-    yarn run build
+    pnpm install --frozen-lockfile
+    pnpm build
   fi
 
   if [ ! -z "$src_link_path" ] && [ ! -z "$link_path" ] && [ -d "$link_path" ]; then

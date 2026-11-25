@@ -56,7 +56,7 @@ write_files:
       User            = ethereum
       WorkingDirectory= /home/ethereum/lodestar
       EnvironmentFile = /home/ethereum/testnet/nodevars_env.txt
-      ExecStart       = /home/ethereum/lodestar/lodestar beacon --dataDir=/home/ethereum/data-lodestar --paramsFile=/home/ethereum/testnet/config.yaml --genesisStateFile=/home/ethereum/testnet/genesis.ssz --eth1.depositContractDeployBlock=0 --network.connectToDiscv5Bootnodes=true --discv5=true --eth1=true --eth1.providerUrls=http://localhost:8545 --execution.urls=http://localhost:8551 --rest=true --rest.address=0.0.0.0 --rest.namespace=* --rest.port=4000 --jwt-secret=/home/ethereum/jwtsecret --bootnodes="${BOOTNODE_ENR_LIST}"
+      ExecStart       = /home/ethereum/lodestar/lodestar beacon --dataDir=/home/ethereum/data-lodestar --paramsFile=/home/ethereum/testnet/config.yaml --genesisStateFile=/home/ethereum/testnet/genesis.ssz --network.connectToDiscv5Bootnodes=true --discv5=true --execution.urls=http://localhost:8551 --rest=true --rest.address=0.0.0.0 --rest.namespace=* --rest.port=4000 --jwt-secret=/home/ethereum/jwtsecret --bootnodes="${BOOTNODE_ENR_LIST}"
       Restart         = on-failure
 
       [Install]
@@ -78,11 +78,15 @@ write_files:
       WantedBy= multi-user.target
   - path: /root/setup.sh
     content: |
-      curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add
-      echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list
-      curl -sL https://deb.nodesource.com/setup_16.x | sudo -E bash -
+      curl -fsSL https://deb.nodesource.com/setup_24.x | bash -
       apt-get update
-      apt-get install -y nodejs yarn
+      apt-get install -y nodejs xz-utils
+      corepack enable
+      curl -fsSL https://ziglang.org/download/0.16.0/zig-x86_64-linux-0.16.0.tar.xz -o /tmp/zig.tar.xz
+      echo "70e49664a74374b48b51e6f3fdfbf437f6395d42509050588bd49abe52ba3d00  /tmp/zig.tar.xz" | sha256sum -c -
+      tar -xJf /tmp/zig.tar.xz -C /opt
+      ln -sf /opt/zig-x86_64-linux-0.16.0/zig /usr/local/bin/zig
+      rm /tmp/zig.tar.xz
   - path: /home/ethereum/setup.sh
     content: |
       #!/bin/bash
