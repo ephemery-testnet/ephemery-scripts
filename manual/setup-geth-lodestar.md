@@ -3,8 +3,8 @@ Instructions for manually setting up a node on Ephemery using geth and lodestar.
 ### Prerequisites
 
 [Install golang](https://go.dev/doc/install) for your system.
-[Install Yarn](https://classic.yarnpkg.com/lang/en/docs/install/).
-Check that your [Node](https://nodejs.org/) version is >= v18.15.0.
+Install [Node.js](https://nodejs.org/) 24 (at least 24.22.1) or 26 (at least 26.13.0), and enable [pnpm](https://pnpm.io/) with `corepack enable` (Node.js 26 needs `npm install -g corepack` first).
+[Install Zig 0.16.0](https://ziglang.org/download/), which Lodestar needs to build its native bindings.
 
 Then:
 ```
@@ -74,15 +74,15 @@ Depending on your OS, it may be necessary to add additional flags, for example `
 
 Open a new terminal session.
 
-Lodestar doesn’t provide a prebuilt binary, so we must build from source - see their [docs](https://chainsafe.github.io/lodestar/install/source/).  
+Build Lodestar from source, see their [docs](https://chainsafe.github.io/lodestar/run/getting-started/installation/#build-from-source).
 
 Download and build software:
 ```
 cd ~
 git clone https://github.com/chainsafe/lodestar.git
 cd lodestar
-yarn
-yarn run build
+pnpm install
+pnpm build
 ```
 Run:
 ```
